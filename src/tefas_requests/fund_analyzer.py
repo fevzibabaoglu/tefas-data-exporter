@@ -188,7 +188,7 @@ class FundAnalyzer:
             try:
                 _, price = entry
                 earnings[label] = round(((latest_price - price) / price) * 100, 6)
-            except Exception:
+            except ZeroDivisionError:
                 earnings[label] = None
 
         return earnings

@@ -115,7 +115,7 @@ class FundAnalyzer:
                 continue
 
             key = strings[0]
-            translated = self.TRANSLATION_MAIN_INDICATORS.get(key)
+            translated = self.TRANSLATION_PRICE_INDICATORS.get(key)
             if not translated:
                 continue
 

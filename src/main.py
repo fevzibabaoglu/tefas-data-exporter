@@ -29,19 +29,19 @@ def main():
     parser = argparse.ArgumentParser(description="TEFAS Data Exporter")
     parser.add_argument(
         "--input", type=str, default=None,
-        help="Optional path to raw fund CSV. If provided, skips fetching real-time data."
+        help="Optional path to a raw fund CSV. If provided, skips fetching real-time data."
     )
     parser.add_argument(
         "--output", type=str, default="output",
-        help="Output directory to save the files."
+        help="Output directory to save the files. (default: 'output')"
     )
     parser.add_argument(
         "--include-price-chart", action="store_true",
-        help="Include price chart data in raw data."
+        help="Include price chart data in raw data. (default: off)"
     )
     parser.add_argument(
         "--max-workers", type=int, default=16,
-        help="Maximum number of workers for fetching data (default: 16)."
+        help="Maximum number of workers for fetching data. (default: 16)"
     )
 
     args = parser.parse_args()

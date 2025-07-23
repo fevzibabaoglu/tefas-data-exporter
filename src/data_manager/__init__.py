@@ -17,12 +17,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 
-from setuptools import setup, find_packages
+from .data_processor import DataProcessor
+from .fund_data_manager import FundDataManager
 
 
-setup(
-    name="tefas-data-exporter",
-    version="1.0.0",
-    packages=find_packages(where="src"),
-    package_dir={"": "src"},
-)
+__all__ = ["DataProcessor", "FundDataManager"]

@@ -17,8 +17,56 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 
+import argparse
+import pandas as pd
+from pathlib import Path
+
+from data_manager import DataProcessor, FundDataManager
+from tefas_requests import FundCodeFetcher
+
+
 def main():
-    pass
+    parser = argparse.ArgumentParser(description="TEFAS Data Exporter")
+    parser.add_argument(
+        "--input", type=str, default=None,
+        help="Optional path to a raw fund CSV. If provided, skips fetching real-time data."
+    )
+    parser.add_argument(
+        "--output", type=str, default="output",
+        help="Output directory to save the files. (default: 'output')"
+    )
+    parser.add_argument(
+        "--include-price-chart", action="store_true",
+        help="Include price chart data in raw data. (default: off)"
+    )
+    parser.add_argument(
+        "--max-workers", type=int, default=16,
+        help="Maximum number of workers for fetching data. (default: 16)"
+    )
+
+    args = parser.parse_args()
+
+    output_dir = Path(args.output)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    raw_csv_path = output_dir / "fund_data_raw.csv"
+    processed_csv_path = output_dir / "fund_data.csv"
+
+    if args.input:
+        raw_df = pd.read_csv(args.input, encoding="utf-8")
+    else:
+        fetcher = FundCodeFetcher()
+        manager = FundDataManager(
+            fetcher,
+            include_price_chart=args.include_price_chart,
+            max_workers=args.max_workers
+        )
+        raw_df = manager.fetch_all_fund_data()
+        raw_df.to_csv(raw_csv_path, index=False, encoding="utf-8")
+
+    processor = DataProcessor(raw_df)
+    processed_df = processor.process()
+    processed_df.to_csv(processed_csv_path, index=False, encoding="utf-8")
 
 
 if __name__ == '__main__':

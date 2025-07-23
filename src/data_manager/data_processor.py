@@ -32,6 +32,7 @@ class DataProcessor:
         price_df = self._parse_price_change()
         dist_df = self._parse_asset_distribution()
 
+        self.df.drop(columns=["price_chart"], errors="ignore", inplace=True)
         self.df.drop(columns=["price_change_percentage", "asset_distribution"], inplace=True)
         self.df = pd.concat([self.df, price_df], axis=1)
         self.df = pd.concat([self.df, dist_df], axis=1)

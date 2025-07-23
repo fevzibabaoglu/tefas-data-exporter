@@ -138,7 +138,9 @@ class FundAnalyzer:
             return []
 
         asset_pairs = re.findall(r'\["(.*?)",([\d.]+)\]', match.group(1))
-        return [(asset, float(percent)) for asset, percent in asset_pairs]
+        distribution = [(asset, float(percent)) for asset, percent in asset_pairs]
+        distribution.sort(key=lambda x: x[1], reverse=True)
+        return distribution
 
     def calculate_earnings(self, price_chart: list) -> dict:
         if not price_chart:

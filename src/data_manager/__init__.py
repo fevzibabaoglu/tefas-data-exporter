@@ -17,7 +17,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 
+from .data_processor import DataProcessor
 from .fund_data_manager import FundDataManager
 
 
-__all__ = ["FundDataManager"]
+__all__ = ["DataProcessor", "FundDataManager"]

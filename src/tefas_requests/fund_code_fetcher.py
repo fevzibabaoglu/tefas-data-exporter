@@ -17,8 +17,26 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 
-from .fund_analyzer import FundAnalyzer
-from .fund_code_fetcher import FundCodeFetcher
+import requests
 
 
-__all__ = ["FundAnalyzer", "FundCodeFetcher"]
+class FundCodeFetcher:
+    URL = "https://www.tefas.gov.tr/api/DB/BindComparisonManagementFees"
+    HEADERS = {
+        "Content-Length": "23",
+        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+        "Host": "www.tefas.gov.tr"
+    }
+    PAYLOAD = {
+        "fontip": "YAT",
+        "islemdurum": "1"
+    }
+
+    def fetch_sorted_fund_codes(self) -> list:
+        response = requests.post(self.URL, headers=self.HEADERS, data=self.PAYLOAD)
+        response.raise_for_status()
+
+        data = response.json().get("data", [])
+        fund_codes = sorted(item["FONKODU"] for item in data if "FONKODU" in item)
+
+        return fund_codes

@@ -19,9 +19,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import re
 import requests
+import time
 from bs4 import BeautifulSoup
 from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
+from typing import Optional, Union
 
 
 class FundAnalyzer:
@@ -62,9 +64,19 @@ class FundAnalyzer:
         self.soup = self.get_soup()
 
     def get_soup(self) -> BeautifulSoup:
-        response = requests.get(self.url, headers=self.HEADERS)
-        response.raise_for_status()
-        return BeautifulSoup(response.text, 'html.parser')
+        retries = 3
+        delay = 0.5
+
+        for attempt in range(retries):
+            try:
+                response = requests.get(self.url, headers=self.HEADERS, timeout=5)
+                response.raise_for_status()
+                return BeautifulSoup(response.text, 'html.parser')
+            except (requests.exceptions.RequestException, requests.exceptions.ConnectionError) as e:
+                if attempt < retries - 1:
+                    time.sleep(delay * (attempt + 1))
+                else:
+                    raise e
 
     def extract_main_indicators(self) -> dict:
         data = {}
@@ -77,29 +89,40 @@ class FundAnalyzer:
             data['name'] = fund_name_tag.text.strip()
 
         for li in main_div.find(attrs={'class': 'top-list'}).find_all('li'):
-            key, value = [text.strip() for text in li.stripped_strings]
+            strings = list(li.stripped_strings)
+            if not strings:
+                continue
+
+            key = strings[0]
             translated = self.TRANSLATION_MAIN_INDICATORS.get(key)
             if not translated:
                 continue
-            try:
-                data[translated] = float(value.replace(',', '.').strip('%'))
-            except ValueError:
-                data[translated] = value
+
+            value = strings[1] if len(strings) >= 2 else None
+            data[translated] = self._clean_value(value)
 
         return data
 
     def extract_price_indicators(self) -> dict:
-        returns = {}
+        data = {}
         price_div = self.soup.find('div', class_='price-indicators')
         if not price_div:
-            return returns
+            return data
 
         for li in price_div.find_all('li'):
-            key, value = list(li.stripped_strings)
-            translated = self.TRANSLATION_PRICE_INDICATORS.get(key)
-            if translated:
-                returns[translated] = float(value.replace(',', '.').strip('%'))
-        return returns
+            strings = list(li.stripped_strings)
+            if not strings:
+                continue
+
+            key = strings[0]
+            translated = self.TRANSLATION_MAIN_INDICATORS.get(key)
+            if not translated:
+                continue
+
+            value = strings[1] if len(strings) >= 2 else None
+            data[translated] = self._clean_value(value)
+
+        return data
 
     def extract_fund_risk_score(self) -> int:
         profile_table = self.soup.find('div', class_='fund-profile').find('table', id='MainContent_DetailsViewFund')
@@ -110,7 +133,8 @@ class FundAnalyzer:
             header = row.find('td', class_='fund-profile-header')
             item = row.find('td', class_='fund-profile-item')
             if header and item and header.get_text(strip=True) == "Fonun Risk Değeri":
-                return int(item.get_text(strip=True))
+                risk_score = item.get_text(strip=True)
+                return int(risk_score) if risk_score.isdigit() else -1
         return -1
 
     def extract_chart_data(self) -> list:
@@ -124,7 +148,7 @@ class FundAnalyzer:
             return []
 
         dates = [d.strip().strip('"').strip("'") for d in match.group(1).split(',')]
-        prices = [float(p.strip()) for p in match.group(2).split(',')]
+        prices = [self._clean_value(p) for p in match.group(2).split(',')]
         return list(zip(dates, prices))
 
     def extract_asset_distribution(self) -> list:
@@ -138,7 +162,7 @@ class FundAnalyzer:
             return []
 
         asset_pairs = re.findall(r'\["(.*?)",([\d.]+)\]', match.group(1))
-        distribution = [(asset, float(percent)) for asset, percent in asset_pairs]
+        distribution = [(asset, self._clean_value(percent)) for asset, percent in asset_pairs]
         distribution.sort(key=lambda x: x[1], reverse=True)
         return distribution
 
@@ -161,10 +185,10 @@ class FundAnalyzer:
         for label, delta in self.EARNINGS_INTERVALS.items():
             target = latest_date - delta
             entry = next(((d, p) for d, p in dated_prices if d >= target), None)
-            if entry:
+            try:
                 _, price = entry
                 earnings[label] = round(((latest_price - price) / price) * 100, 6)
-            else:
+            except Exception:
                 earnings[label] = None
 
         return earnings
@@ -192,3 +216,14 @@ class FundAnalyzer:
             data["price_chart"] = price_chart
 
         return data
+
+    @staticmethod
+    def _clean_value(value: str) -> Optional[Union[float, str]]:
+        if value is None:
+            return None
+
+        cleaned_value = value.replace(',', '.').strip('%').strip()
+        try:
+            return float(cleaned_value)
+        except ValueError:
+            return cleaned_value

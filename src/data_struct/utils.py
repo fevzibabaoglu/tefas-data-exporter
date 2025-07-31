@@ -17,27 +17,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 
-import requests
-from typing import List
+from datetime import datetime, date
 
 
-class FundCodeFetcher:
-    URL = "https://www.tefas.gov.tr/api/DB/BindComparisonManagementFees"
-    HEADERS = {
-        "Content-Length": "23",
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        "Host": "www.tefas.gov.tr"
-    }
-    PAYLOAD = {
-        "fontip": "YAT",
-        "islemdurum": "1"
-    }
+class Utils:
+    DATE_FORMAT = "%d.%m.%Y"
 
-    def fetch_sorted_fund_codes(self) -> List[str]:
-        response = requests.post(self.URL, headers=self.HEADERS, data=self.PAYLOAD)
-        response.raise_for_status()
+    @staticmethod
+    def parse_date(date_str: str) -> date:
+        return datetime.strptime(date_str, Utils.DATE_FORMAT).date()
 
-        data = response.json().get("data", [])
-        fund_codes = sorted(item["FONKODU"] for item in data if "FONKODU" in item)
-
-        return fund_codes
+    @staticmethod
+    def format_date(date_obj: date) -> str:
+        return date_obj.strftime(Utils.DATE_FORMAT)

@@ -21,9 +21,9 @@ import re
 import requests
 import time
 from bs4 import BeautifulSoup
-from datetime import datetime, timedelta
-from dateutil.relativedelta import relativedelta
-from typing import Optional, Union
+from typing import Optional, Union, List
+
+from data_struct import AssetDistribution, Asset, Price, Utils
 
 
 class FundAnalyzer:
@@ -33,28 +33,7 @@ class FundAnalyzer:
     }
 
     TRANSLATION_MAIN_INDICATORS = {
-        "Son Fiyat (TL)": "last_price",
-        "Günlük Getiri (%)": "1_day",
         "Kategorisi": "category",
-    }
-
-    TRANSLATION_PRICE_INDICATORS = {
-        "Son 1 Ay Getirisi": "1_month",
-        "Son 3 Ay Getirisi": "3_month",
-        "Son 6 Ay Getirisi": "6_month",
-        "Son 1 Yıl Getirisi": "1_year"
-    }
-
-    EARNINGS_INTERVALS = {
-        "2_day": timedelta(days=2),
-        "3_day": timedelta(days=3),
-        "7_day": timedelta(days=7),
-        "14_day": timedelta(days=14),
-        "21_day": timedelta(days=21),
-        "2_month": relativedelta(months=2),
-        "4_month": relativedelta(months=4),
-        "5_month": relativedelta(months=5),
-        "9_month": relativedelta(months=9),
     }
 
 
@@ -103,27 +82,6 @@ class FundAnalyzer:
 
         return data
 
-    def extract_price_indicators(self) -> dict:
-        data = {}
-        price_div = self.soup.find('div', class_='price-indicators')
-        if not price_div:
-            return data
-
-        for li in price_div.find_all('li'):
-            strings = list(li.stripped_strings)
-            if not strings:
-                continue
-
-            key = strings[0]
-            translated = self.TRANSLATION_PRICE_INDICATORS.get(key)
-            if not translated:
-                continue
-
-            value = strings[1] if len(strings) >= 2 else None
-            data[translated] = self._clean_value(value)
-
-        return data
-
     def extract_fund_risk_score(self) -> int:
         profile_table = self.soup.find('div', class_='fund-profile').find('table', id='MainContent_DetailsViewFund')
         if not profile_table:
@@ -134,10 +92,12 @@ class FundAnalyzer:
             item = row.find('td', class_='fund-profile-item')
             if header and item and header.get_text(strip=True) == "Fonun Risk Değeri":
                 risk_score = item.get_text(strip=True)
-                return int(risk_score) if risk_score.isdigit() else -1
+                if risk_score.isdigit():
+                    return int(risk_score)
+
         return -1
 
-    def extract_chart_data(self) -> list:
+    def extract_chart_data(self) -> List[Price]:
         scripts = "".join(str(tag) for tag in self.soup.find_all('script', type='text/javascript'))
 
         match = re.search(
@@ -149,9 +109,17 @@ class FundAnalyzer:
 
         dates = [d.strip().strip('"').strip("'") for d in match.group(1).split(',')]
         prices = [self._clean_value(p) for p in match.group(2).split(',')]
-        return list(zip(dates, prices))
 
-    def extract_asset_distribution(self) -> list:
+        price_list = [
+            Price(
+                date=Utils.parse_date(d),
+                value=p,
+            )
+            for d, p in zip(dates, prices)
+        ]
+        return price_list
+
+    def extract_asset_distribution(self) -> List[AssetDistribution]:
         scripts = "".join(str(tag) for tag in self.soup.find_all('script', type='text/javascript'))
 
         match = re.search(
@@ -164,58 +132,31 @@ class FundAnalyzer:
         asset_pairs = re.findall(r'\["(.*?)",([\d.]+)\]', match.group(1))
         distribution = [(asset, self._clean_value(percent)) for asset, percent in asset_pairs]
         distribution.sort(key=lambda x: x[1], reverse=True)
-        return distribution
 
-    def calculate_earnings(self, price_chart: list) -> dict:
-        if not price_chart:
-            return {}
+        distribution_list = [
+            AssetDistribution(
+                distribution_name=asset,
+                distribution_amount=amount,
+            )
+            for asset, amount in distribution
+        ]
+        return distribution_list
 
-        latest_date = datetime.strptime(price_chart[-1][0], "%d.%m.%Y").date()
-        latest_price = price_chart[-1][1]
-
-        dated_prices = []
-        for date_str, price in price_chart:
-            try:
-                date = datetime.strptime(date_str, "%d.%m.%Y").date()
-                dated_prices.append((date, price))
-            except ValueError:
-                continue
-
-        earnings = {}
-        for label, delta in self.EARNINGS_INTERVALS.items():
-            target = latest_date - delta
-            entry = next(((d, p) for d, p in dated_prices if d >= target), None)
-            try:
-                _, price = entry
-                earnings[label] = round(((latest_price - price) / price) * 100, 6)
-            except ZeroDivisionError:
-                earnings[label] = None
-
-        return earnings
-
-    def get_fund_data(self, include_price_chart: bool = False) -> dict:
-        price_chart = self.extract_chart_data()
+    def get_fund_data(self) -> Asset:
         main_indicators = self.extract_main_indicators()
-        price_indicators = self.extract_price_indicators()
-        calculated_earnings = self.calculate_earnings(price_chart)
+        price_chart = self.extract_chart_data()
+        risk_score = self.extract_fund_risk_score()
+        asset_distribution = self.extract_asset_distribution()
 
-        # Merge price change metrics
-        price_change = {**price_indicators, **calculated_earnings}
-        if '1_day' in main_indicators:
-            price_change['1_day'] = main_indicators.pop('1_day')
-
-        data = {
-            "code": self.code,
-            **main_indicators,
-            "risk_score": self.extract_fund_risk_score(),
-            "price_change_percentage": price_change,
-            "asset_distribution": self.extract_asset_distribution(),
-        }
-
-        if include_price_chart:
-            data["price_chart"] = price_chart
-
-        return data
+        asset = Asset(
+            code=self.code,
+            name=main_indicators.get('name', ''),
+            category=main_indicators.get('category', ''),
+            risk_score=risk_score,
+            prices=price_chart,
+            asset_distributions=asset_distribution,
+        )
+        return asset
 
     @staticmethod
     def _clean_value(value: str) -> Optional[Union[float, str]]:

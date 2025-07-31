@@ -17,12 +17,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 
-import pandas as pd
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
 from typing import List, Dict
 
+from data_struct import Asset
 from tefas_requests import FundAnalyzer, FundCodeFetcher
 
 
@@ -31,15 +31,16 @@ class FundDataManager:
         self,
         fund_code_fetcher: FundCodeFetcher,
         include_price_chart: bool = False,
-        max_workers: int = 16
+        max_workers: int = 16,
     ):
         self.fund_code_fetcher = fund_code_fetcher
         self.include_price_chart = include_price_chart
         self.max_workers = max_workers
+
         self.lock = threading.Lock()
         self.data: List[Dict] = []
 
-    def fetch_all_fund_data(self) -> pd.DataFrame:
+    def fetch_all_fund_data(self) -> List[Asset]:
         fund_codes = self.fund_code_fetcher.fetch_sorted_fund_codes()
 
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
@@ -55,11 +56,11 @@ class FundDataManager:
                 except Exception as e:
                     print(f"Error fetching fund {code}: {e}")
 
-        return pd.DataFrame(self.data)
+        return self.data
 
-    def _fetch_and_store(self, code: str):
+    def _fetch_and_store(self, code: str) -> None:
         analyzer = FundAnalyzer(code)
-        fund_data = analyzer.get_fund_data(include_price_chart=self.include_price_chart)
+        asset = analyzer.get_fund_data()
 
         with self.lock:
-            self.data.append(fund_data)
+            self.data.append(asset)

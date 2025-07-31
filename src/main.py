@@ -19,11 +19,17 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import argparse
 import pandas as pd
+from argparse import Namespace
 from pathlib import Path
 
 from data_manager import DataProcessor, FundDataManager
+from data_struct import Asset
 from tefas_requests import FundCodeFetcher
 
+
+def _check_validity(args: Namespace):
+    if args.input and args.no_processed:
+        raise ValueError("Processed data output must be enabled if input CSV is provided.")
 
 def main():
     parser = argparse.ArgumentParser(description="TEFAS Data Exporter")
@@ -37,36 +43,46 @@ def main():
     )
     parser.add_argument(
         "--include-price-chart", action="store_true",
-        help="Include price chart data in raw data. (default: off)"
+        help="Include price chart data in raw data."
     )
     parser.add_argument(
         "--max-workers", type=int, default=16,
         help="Maximum number of workers for fetching data. (default: 16)"
     )
+    parser.add_argument(
+        "--no-processed", action="store_true",
+        help="Do not include processed data in the output."
+    )
 
     args = parser.parse_args()
+    _check_validity(args)
 
     output_dir = Path(args.output)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    raw_csv_path = output_dir / "fund_data_raw.csv"
-    processed_csv_path = output_dir / "fund_data.csv"
-
-    if args.input:
-        raw_df = pd.read_csv(args.input, encoding="utf-8")
-    else:
+    if not args.input:
         fetcher = FundCodeFetcher()
         manager = FundDataManager(
             fetcher,
             include_price_chart=args.include_price_chart,
             max_workers=args.max_workers
         )
-        raw_df = manager.fetch_all_fund_data()
+
+        assets = manager.fetch_all_fund_data()
+        raw_df = pd.DataFrame([obj.to_dict() for obj in assets])
+
+        raw_csv_path = output_dir / "fund_data_raw.csv"
         raw_df.to_csv(raw_csv_path, index=False, encoding="utf-8")
 
-    processor = DataProcessor(raw_df)
-    processed_df = processor.process()
-    processed_df.to_csv(processed_csv_path, index=False, encoding="utf-8")
+    if not args.no_processed:
+        if args.input:
+            assets = Asset.from_csv(args.input)
+
+        processor = DataProcessor(assets)
+        processed_df = processor.process()
+
+        processed_csv_path = output_dir / "fund_data.csv"
+        processed_df.to_csv(processed_csv_path, index=False, encoding="utf-8")
 
 
 if __name__ == '__main__':

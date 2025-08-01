@@ -95,5 +95,12 @@ class DataProcessor:
             asset_distributions_list.append(asset_distribution_dict)
 
         df = pd.DataFrame(asset_distributions_list)
-        df = df[sorted(col for col in df.columns if col != 'Diğer') + ['Diğer']]
+
+        if 'Diğer' in df.columns:
+            sorted_columns = sorted(col for col in df.columns if col != 'Diğer')
+            sorted_columns += ['Diğer']
+        else:
+            sorted_columns = sorted(df.columns)
+
+        df = df[sorted_columns]
         return df

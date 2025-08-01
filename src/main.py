@@ -23,6 +23,7 @@ from pathlib import Path
 
 from data_manager import DataProcessor, FundDataManager, Utils
 from data_struct import Asset
+from tefas_requests import FounderFetcher, FundCodeFetcher
 
 
 def main():
@@ -47,7 +48,24 @@ def main():
         "--no-processed", action="store_true",
         help="Do not include processed data in the output."
     )
+    parser.add_argument(
+        "--get-only-founders", action="store_true",
+        help="Fetch only founder data and display."
+    )
+    parser.add_argument(
+        '--founders', nargs='+', type=str,
+        help='List of founder codes for additional fetching.'
+    )
     args = parser.parse_args()
+
+    # Get founders
+    founders = FounderFetcher.fetch_founders()
+    FundCodeFetcher.set_founders(founders)
+
+    if args.get_only_founders:
+        for founder in founders:
+            print(f"Code: {founder.get_code()}, Name: {founder.get_name()}")
+        return
 
     output_dir = Path(args.output)
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -55,7 +73,8 @@ def main():
     if not args.input:
         manager = FundDataManager(
             include_price_chart=args.include_price_chart,
-            max_workers=args.max_workers
+            max_workers=args.max_workers,
+            additional_founders=args.founders,
         )
 
         assets = manager.fetch_all_fund_data()

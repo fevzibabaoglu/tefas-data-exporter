@@ -29,9 +29,22 @@ class FundCodeFetcher:
         "fontip": "YAT",
     }
 
+    founders = None
+
+
+    @classmethod
+    def set_founders(cls, founders: List[Founder]) -> None:
+        cls.founders = founders
+
+
     @staticmethod
     def fetch_tefas_fund_codes() -> List[Dict[str, Union[str, Founder]]]:
         payload = {"islemdurum": "1", **FundCodeFetcher.PAYLOAD}
+        return FundCodeFetcher._fetch_fund_codes(payload)
+
+    @staticmethod
+    def fetch_founder_fund_codes(founder_code: str) -> List[Dict[str, Union[str, Founder]]]:
+        payload = {"kurucukod": founder_code, **FundCodeFetcher.PAYLOAD}
         return FundCodeFetcher._fetch_fund_codes(payload)
 
     @staticmethod
@@ -39,7 +52,20 @@ class FundCodeFetcher:
         response = TEFASRequester.post_request(FundCodeFetcher.URL_ENDPOINT, data=payload)
         response_data = response.json().get("data", [])
 
-        data = response.json().get("data", [])
-        fund_codes = sorted(item["FONKODU"] for item in data if "FONKODU" in item)
+        data = []
+        for item in response_data:
+            fund_code = item.get("FONKODU", None)
+            founder_code = item.get("KURUCUKODU", None)
 
-        return fund_codes
+            founder = next((f for f in FundCodeFetcher.founders if f.get_code() == founder_code), None) \
+                        if founder_code and FundCodeFetcher.founders \
+                        else None
+
+            if fund_code:
+                data.append({
+                    "fund_code": fund_code,
+                    "founder": founder,
+                })
+
+        data.sort(key=lambda x: x["fund_code"])
+        return data

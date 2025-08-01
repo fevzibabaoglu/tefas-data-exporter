@@ -20,6 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from .asset_distribution import AssetDistribution
 from .asset import Asset
 from .date_range import DateRange, TimeFrame
+from .founder import Founder
 from .price import Price
 from .utils import Utils
 
@@ -29,6 +30,7 @@ __all__ = [
     "Asset",
     "DateRange",
     "TimeFrame",
+    "Founder",
     "Price",
     "Utils",
 ]

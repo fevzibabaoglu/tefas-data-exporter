@@ -21,7 +21,7 @@ import re
 from typing import Optional, Union, List
 
 from .tefas_requester import TEFASRequester
-from data_struct import AssetDistribution, Asset, Price, Utils
+from data_struct import AssetDistribution, Asset, Founder, Price, Utils
 
 
 class FundFetcher:
@@ -36,8 +36,9 @@ class FundFetcher:
     }
 
 
-    def __init__(self, code):
+    def __init__(self, code: str, founder: Optional[Founder] = None):
         self.code = code
+        self.founder = founder
         self.soup = TEFASRequester.get_soup(
             self.URL_ENDPOINT.format(code=self.code),
             timeout=5,
@@ -146,6 +147,7 @@ class FundFetcher:
         asset = Asset(
             code=self.code,
             name=main_indicators.get('name', ''),
+            founder=self.founder,
             category=main_indicators.get('category', ''),
             risk_score=fund_profile['risk_score'],
             is_in_tefas=fund_profile['is_in_tefas'],

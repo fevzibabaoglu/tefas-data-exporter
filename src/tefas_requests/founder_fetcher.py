@@ -17,9 +17,28 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 
-from .founder_fetcher import FounderFetcher
-from .fund_fetcher import FundFetcher
-from .fund_code_fetcher import FundCodeFetcher
+from typing import List
+
+from .tefas_requester import TEFASRequester
+from data_struct import Founder
 
 
-__all__ = ["FounderFetcher", "FundFetcher", "FundCodeFetcher"]
+class FounderFetcher:
+    URL_ENDPOINT = "FonKarsilastirma.aspx"
+
+
+    @staticmethod
+    def fetch_founders() -> List[Founder]:
+        soup = TEFASRequester.get_soup(FounderFetcher.URL_ENDPOINT, timeout=5)
+        select = soup.find('select', id='DropDownListFounderYAT')
+        options = select.find_all('option')
+        
+        founders = []
+        for option in options:
+            value = option['value']
+            name = option.text.strip()
+
+            if value != "Tümü":
+                founders.append(Founder(code=value, name=name))
+
+        return founders

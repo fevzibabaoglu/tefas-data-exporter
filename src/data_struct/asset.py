@@ -25,6 +25,7 @@ from typing import List, Optional
 
 from .asset_distribution import AssetDistribution
 from .date_range import DateRange
+from .founder import Founder
 from .price import Price
 
 
@@ -33,6 +34,7 @@ class Asset:
         self,
         code: str,
         name: str,
+        founder: Optional[Founder],
         category: str,
         risk_score: int,
         is_in_tefas: bool,
@@ -41,6 +43,7 @@ class Asset:
     ):
         self.code = code
         self.name = name
+        self.founder = founder
         self.category = category
         self.risk_score = risk_score
         self._is_in_tefas = is_in_tefas
@@ -58,6 +61,9 @@ class Asset:
 
     def get_name(self) -> str:
         return self.name
+
+    def get_founder(self) -> Optional[Founder]:
+        return self.founder
 
     def get_category(self) -> str:
         return self.category
@@ -101,6 +107,7 @@ class Asset:
         return {
             "code": self.get_code(),
             "name": self.get_name(),
+            "founder": self.get_founder().to_dict() if self.get_founder() else None,
             "category": self.get_category(),
             "risk_score": self.get_risk_score(),
             "is_in_tefas": self.is_in_tefas(),
@@ -111,6 +118,9 @@ class Asset:
 
     @classmethod
     def from_dict(cls, data: dict) -> 'Asset':
+        founder_dict = data.get("founder", None)
+        founder = Founder.from_dict(founder_dict) if founder_dict else None
+
         price_dicts = data.get("prices", None)
         prices = [
             Price.from_dict(price)
@@ -126,6 +136,7 @@ class Asset:
         return cls(
             code=data.get("code", None),
             name=data.get("name", None),
+            founder=founder,
             category=data.get("category", None),
             risk_score=data.get("risk_score", None),
             is_in_tefas=data.get("is_in_tefas", None),
@@ -163,6 +174,8 @@ class Asset:
             raise ValueError("Asset name cannot be empty.")
         if not isinstance(self.get_name(), str):
             raise ValueError("Asset name must be a string.")
+        if self.get_founder() is not None and not isinstance(self.get_founder(), Founder):
+            raise ValueError("Asset founder must be a Founder instance.")
         if not self.get_category():
             raise ValueError("Asset category cannot be empty.")
         if not isinstance(self.get_category(), str):

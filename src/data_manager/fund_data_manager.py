@@ -20,9 +20,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
-from typing import List, Dict
+from typing import List, Dict, Optional
 
-from data_struct import Asset
+from data_struct import Asset, Founder
 from tefas_requests import FundFetcher, FundCodeFetcher
 
 
@@ -31,9 +31,11 @@ class FundDataManager:
         self,
         include_price_chart: bool = False,
         max_workers: int = 16,
+        additional_founders: Optional[List[Founder]] = None,
     ):
         self.include_price_chart = include_price_chart
         self.max_workers = max_workers
+        self.additional_founders = additional_founders
 
         self.lock = threading.Lock()
         self.data: List[Dict] = []
@@ -41,9 +43,16 @@ class FundDataManager:
     def fetch_all_fund_data(self) -> List[Asset]:
         fund_codes_data = FundCodeFetcher.fetch_tefas_fund_codes()
 
+        if self.additional_founders:
+            founder_fund_codes = []
+            for founder in self.additional_founders:
+                codes = FundCodeFetcher.fetch_founder_fund_codes(founder)
+                founder_fund_codes.extend(codes)
+            fund_codes_data.extend(founder_fund_codes)
+
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             futures = {
-                executor.submit(self._fetch_fund_data, data): data
+                executor.submit(self._fetch_fund_data, data['fund_code'], data['founder']): data['fund_code']
                 for data in fund_codes_data
             }
 
@@ -56,8 +65,8 @@ class FundDataManager:
 
         return self.data
 
-    def _fetch_fund_data(self, code: str) -> None:
-        analyzer = FundFetcher(code)
+    def _fetch_fund_data(self, code: str, founder: Optional[Founder] = None) -> None:
+        analyzer = FundFetcher(code, founder)
         asset = analyzer.get_fund_data()
 
         with self.lock:

@@ -70,6 +70,7 @@ def main():
 
         assets = manager.fetch_all_fund_data()
         raw_df = pd.DataFrame([obj.to_dict() for obj in assets])
+        raw_df = Utils.postprocess_dataframe(raw_df)
 
         raw_csv_path = output_dir / "fund_data_raw.csv"
         raw_df.to_csv(raw_csv_path, index=False, encoding="utf-8")
@@ -80,6 +81,7 @@ def main():
 
         processor = DataProcessor(assets)
         processed_df = processor.process()
+        processed_df = Utils.postprocess_dataframe(processed_df)
 
         processed_csv_path = output_dir / "fund_data.csv"
         processed_df.to_csv(processed_csv_path, index=False, encoding="utf-8")

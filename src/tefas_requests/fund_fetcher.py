@@ -26,11 +26,11 @@ from typing import Optional, Union, List
 from data_struct import AssetDistribution, Asset, Price, Utils
 
 
-class FundAnalyzer:
     BASE_URL = "https://www.tefas.gov.tr/FonAnaliz.aspx?FonKod={code}"
     HEADERS = {
         'host': 'www.tefas.gov.tr'
     }
+class FundFetcher:
 
     TRANSLATION_MAIN_INDICATORS = {
         "Kategorisi": "category",

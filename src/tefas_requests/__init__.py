@@ -17,8 +17,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 
-from .fund_analyzer import FundAnalyzer
+from .fund_fetcher import FundFetcher
 from .fund_code_fetcher import FundCodeFetcher
 
 
-__all__ = ["FundAnalyzer", "FundCodeFetcher"]
+__all__ = ["FundFetcher", "FundCodeFetcher"]

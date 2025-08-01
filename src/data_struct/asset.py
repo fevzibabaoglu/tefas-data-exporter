@@ -35,6 +35,7 @@ class Asset:
         name: str,
         category: str,
         risk_score: int,
+        is_in_tefas: bool,
         prices: List[Price],
         asset_distributions: List[AssetDistribution],
     ):
@@ -42,6 +43,7 @@ class Asset:
         self.name = name
         self.category = category
         self.risk_score = risk_score
+        self._is_in_tefas = is_in_tefas
         self.asset_distributions = asset_distributions
         self.prices = prices
         self._check_validity()
@@ -62,6 +64,9 @@ class Asset:
 
     def get_risk_score(self) -> int:
         return self.risk_score
+
+    def is_in_tefas(self) -> bool:
+        return self._is_in_tefas
 
     def get_asset_distributions(self) -> List[AssetDistribution]:
         return self.asset_distributions
@@ -98,6 +103,7 @@ class Asset:
             "name": self.get_name(),
             "category": self.get_category(),
             "risk_score": self.get_risk_score(),
+            "is_in_tefas": self.is_in_tefas(),
             "prices": [price.to_dict() for price in self.get_prices()],
             "asset_distributions": [dist.to_dict() for dist in self.get_asset_distributions()],
             "date_range": self.get_date_range().to_dict(),
@@ -122,6 +128,7 @@ class Asset:
             name=data.get("name", None),
             category=data.get("category", None),
             risk_score=data.get("risk_score", None),
+            is_in_tefas=data.get("is_in_tefas", None),
             prices=prices,
             asset_distributions=asset_distributions,
         )
@@ -166,6 +173,10 @@ class Asset:
             raise ValueError("Asset risk score must be an integer.")
         if self.get_risk_score() <= 0:
             raise ValueError("Asset risk score must be a positive integer.")
+        if self.is_in_tefas() is None:
+            raise ValueError("Asset TEFAS status cannot be None.")
+        if not isinstance(self.is_in_tefas(), bool):
+            raise ValueError("Asset TEFAS status must be a boolean.")
         if not self.get_prices():
             raise ValueError("Prices cannot be empty.")
         if not isinstance(self.get_prices(), list):

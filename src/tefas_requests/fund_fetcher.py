@@ -30,6 +30,10 @@ class FundFetcher:
     TRANSLATION_MAIN_INDICATORS = {
         "Kategorisi": "category",
     }
+    TRANSLATION_FUND_PROFILE = {
+        "Fonun Risk Değeri": "risk_score",
+        "Platform İşlem Durumu": "is_in_tefas",
+    }
 
 
     def __init__(self, code):
@@ -65,20 +69,28 @@ class FundFetcher:
 
         return data
 
-    def extract_fund_risk_score(self) -> int:
+    def extract_fund_profile(self) -> dict:
         profile_table = self.soup.find('div', class_='fund-profile').find('table', id='MainContent_DetailsViewFund')
         if not profile_table:
-            return -1
+            return {}
+
+        data = {}
 
         for row in profile_table.find_all('tr'):
             header = row.find('td', class_='fund-profile-header')
             item = row.find('td', class_='fund-profile-item')
-            if header and item and header.get_text(strip=True) == "Fonun Risk Değeri":
-                risk_score = item.get_text(strip=True)
-                if risk_score.isdigit():
-                    return int(risk_score)
+            if header and item:
+                header_translated = self.TRANSLATION_FUND_PROFILE.get(
+                    header.get_text(strip=True),
+                    None,
+                )
+                if not header_translated:
+                    continue
 
-        return -1
+                value = item.get_text(strip=True)
+                data[header_translated] = self._clean_fund_profile_value(value)
+
+        return data
 
     def extract_chart_data(self) -> List[Price]:
         scripts = "".join(str(tag) for tag in self.soup.find_all('script', type='text/javascript'))
@@ -127,7 +139,7 @@ class FundFetcher:
 
     def get_fund_data(self) -> Asset:
         main_indicators = self.extract_main_indicators()
-        risk_score = self.extract_fund_risk_score()
+        fund_profile = self.extract_fund_profile()
         prices = self.extract_chart_data()
         asset_distribution = self.extract_asset_distribution()
 
@@ -135,7 +147,8 @@ class FundFetcher:
             code=self.code,
             name=main_indicators.get('name', ''),
             category=main_indicators.get('category', ''),
-            risk_score=risk_score,
+            risk_score=fund_profile['risk_score'],
+            is_in_tefas=fund_profile['is_in_tefas'],
             prices=prices,
             asset_distributions=asset_distribution,
         )
@@ -154,6 +167,21 @@ class FundFetcher:
             pass
 
         return cleaned_value
+
+    @staticmethod
+    def _clean_fund_profile_value(value: str) -> Optional[Union[str, int, bool]]:
+        if not value:
+            return None
+
+        if value.isdigit():
+            return int(value)
+
+        if value == "TEFAS'ta işlem görüyor":
+            return True
+        if value == "TEFAS'ta İşlem Görmüyor":
+            return False
+
+        return value
 
     @staticmethod
     def _clean_price_chart_value(value: str) -> Optional[Union[str, float]]:

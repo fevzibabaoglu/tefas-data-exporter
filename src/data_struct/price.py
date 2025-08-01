@@ -36,8 +36,8 @@ class Price:
     
     def to_dict(self) -> dict:
         return {
-            "date": Utils.format_date(self.date),
-            "value": self.value,
+            "date": Utils.format_date(self.get_date()),
+            "value": self.get_value(),
         }
 
     @classmethod

@@ -38,8 +38,8 @@ class DateRange:
     
     def to_dict(self) -> dict:
         return {
-            "start_date": Utils.format_date(self.start_date),
-            "end_date": Utils.format_date(self.end_date),
+            "start_date": Utils.format_date(self.get_start_date()),
+            "end_date": Utils.format_date(self.get_end_date()),
         }
 
     @classmethod

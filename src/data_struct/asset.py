@@ -94,13 +94,13 @@ class Asset:
 
     def to_dict(self) -> dict:
         return {
-            "code": self.code,
-            "name": self.name,
-            "category": self.category,
-            "risk_score": self.risk_score,
-            "prices": [price.to_dict() for price in self.prices],
-            "asset_distributions": [dist.to_dict() for dist in self.asset_distributions],
-            "date_range": self.date_range.to_dict(),
+            "code": self.get_code(),
+            "name": self.get_name(),
+            "category": self.get_category(),
+            "risk_score": self.get_risk_score(),
+            "prices": [price.to_dict() for price in self.get_prices()],
+            "asset_distributions": [dist.to_dict() for dist in self.get_asset_distributions()],
+            "date_range": self.get_date_range().to_dict(),
         }
 
     @classmethod
@@ -118,10 +118,10 @@ class Asset:
         ] if asset_distribution_dicts else None
 
         return cls(
-            code=data["code"],
-            name=data["name"],
-            category=data["category"],
-            risk_score=data["risk_score"],
+            code=data.get("code", None),
+            name=data.get("name", None),
+            category=data.get("category", None),
+            risk_score=data.get("risk_score", None),
             prices=prices,
             asset_distributions=asset_distributions,
         )

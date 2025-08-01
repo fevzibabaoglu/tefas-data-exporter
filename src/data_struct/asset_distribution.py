@@ -27,12 +27,12 @@ class AssetDistribution:
         return self.distribution_name
 
     def get_distribution_amount(self) -> float:
-        return self.distribution_amount
+        return round(self.distribution_amount, 4)
     
     def to_dict(self) -> dict:
         return {
-            "name": self.distribution_name,
-            "amount": self.distribution_amount
+            "name": self.get_distribution_name(),
+            "amount": self.get_distribution_amount()
         }
 
     @classmethod

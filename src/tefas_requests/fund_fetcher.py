@@ -56,12 +56,12 @@ class FundFetcher:
                 continue
 
             key = strings[0]
-            translated = self.TRANSLATION_MAIN_INDICATORS.get(key)
+            translated = self.TRANSLATION_MAIN_INDICATORS.get(key, None)
             if not translated:
                 continue
 
             value = strings[1] if len(strings) >= 2 else None
-            data[translated] = self._clean_value(value)
+            data[translated] = self._clean_main_indicator_value(value)
 
         return data
 
@@ -90,8 +90,8 @@ class FundFetcher:
         if not match:
             return []
 
-        dates = [d.strip().strip('"').strip("'") for d in match.group(1).split(',')]
-        prices = [self._clean_value(p) for p in match.group(2).split(',')]
+        dates = [self._clean_price_chart_value(d) for d in match.group(1).split(',')]
+        prices = [self._clean_price_chart_value(p) for p in match.group(2).split(',')]
 
         price_list = [
             Price(
@@ -113,13 +113,13 @@ class FundFetcher:
             return []
 
         asset_pairs = re.findall(r'\["(.*?)",([\d.]+)\]', match.group(1))
-        distribution = [(asset, self._clean_value(percent)) for asset, percent in asset_pairs]
+        distribution = [(asset, self._clean_distribution_value(percent)) for asset, percent in asset_pairs]
         distribution.sort(key=lambda x: x[1], reverse=True)
 
         distribution_list = [
             AssetDistribution(
                 distribution_name=asset,
-                distribution_amount=amount,
+                distribution_amount=amount / 100,
             )
             for asset, amount in distribution
         ]
@@ -127,8 +127,8 @@ class FundFetcher:
 
     def get_fund_data(self) -> Asset:
         main_indicators = self.extract_main_indicators()
-        price_chart = self.extract_chart_data()
         risk_score = self.extract_fund_risk_score()
+        prices = self.extract_chart_data()
         asset_distribution = self.extract_asset_distribution()
 
         asset = Asset(
@@ -136,18 +136,47 @@ class FundFetcher:
             name=main_indicators.get('name', ''),
             category=main_indicators.get('category', ''),
             risk_score=risk_score,
-            prices=price_chart,
+            prices=prices,
             asset_distributions=asset_distribution,
         )
         return asset
 
     @staticmethod
-    def _clean_value(value: str) -> Optional[Union[float, str]]:
-        if value is None:
+    def _clean_main_indicator_value(value: str) -> Optional[Union[str]]:
+        if not value:
             return None
 
-        cleaned_value = value.replace(',', '.').strip('%').strip()
+        cleaned_value = value.strip().replace('.', '').replace(',', '.').strip('%')
+
         try:
             return float(cleaned_value)
         except ValueError:
-            return cleaned_value
+            pass
+
+        return cleaned_value
+
+    @staticmethod
+    def _clean_price_chart_value(value: str) -> Optional[Union[str, float]]:
+        if not value:
+            return None
+
+        cleaned_value = value.strip().strip('"').strip("'")
+
+        try:
+            return float(cleaned_value)
+        except ValueError:
+            pass
+
+        return cleaned_value
+
+    @staticmethod
+    def _clean_distribution_value(value: str) -> Optional[Union[str, float]]:
+        if not value:
+            return None
+
+        try:
+            return float(value)
+        except ValueError:
+            pass
+
+        return value

@@ -19,17 +19,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import argparse
 import pandas as pd
-from argparse import Namespace
 from pathlib import Path
 
-from data_manager import DataProcessor, FundDataManager
+from data_manager import DataProcessor, FundDataManager, Utils
 from data_struct import Asset
-from tefas_requests import FundCodeFetcher
 
-
-def _check_validity(args: Namespace):
-    if args.input and args.no_processed:
-        raise ValueError("Processed data output must be enabled if input CSV is provided.")
 
 def main():
     parser = argparse.ArgumentParser(description="TEFAS Data Exporter")
@@ -53,17 +47,13 @@ def main():
         "--no-processed", action="store_true",
         help="Do not include processed data in the output."
     )
-
     args = parser.parse_args()
-    _check_validity(args)
 
     output_dir = Path(args.output)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     if not args.input:
-        fetcher = FundCodeFetcher()
         manager = FundDataManager(
-            fetcher,
             include_price_chart=args.include_price_chart,
             max_workers=args.max_workers
         )

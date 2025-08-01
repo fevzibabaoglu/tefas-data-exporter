@@ -23,17 +23,15 @@ from tqdm import tqdm
 from typing import List, Dict
 
 from data_struct import Asset
-from tefas_requests import FundAnalyzer, FundCodeFetcher
+from tefas_requests import FundFetcher, FundCodeFetcher
 
 
 class FundDataManager:
     def __init__(
         self,
-        fund_code_fetcher: FundCodeFetcher,
         include_price_chart: bool = False,
         max_workers: int = 16,
     ):
-        self.fund_code_fetcher = fund_code_fetcher
         self.include_price_chart = include_price_chart
         self.max_workers = max_workers
 
@@ -41,12 +39,12 @@ class FundDataManager:
         self.data: List[Dict] = []
 
     def fetch_all_fund_data(self) -> List[Asset]:
-        fund_codes = self.fund_code_fetcher.fetch_sorted_fund_codes()
+        fund_codes_data = FundCodeFetcher.fetch_tefas_fund_codes()
 
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             futures = {
-                executor.submit(self._fetch_and_store, code): code
-                for code in fund_codes
+                executor.submit(self._fetch_fund_data, data): data
+                for data in fund_codes_data
             }
 
             for future in tqdm(as_completed(futures), total=len(futures), desc="Fetching funds", unit="fund"):
@@ -58,8 +56,8 @@ class FundDataManager:
 
         return self.data
 
-    def _fetch_and_store(self, code: str) -> None:
-        analyzer = FundAnalyzer(code)
+    def _fetch_fund_data(self, code: str) -> None:
+        analyzer = FundFetcher(code)
         asset = analyzer.get_fund_data()
 
         with self.lock:

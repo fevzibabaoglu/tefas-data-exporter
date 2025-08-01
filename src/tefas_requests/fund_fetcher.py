@@ -18,19 +18,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 import re
-import requests
-import time
-from bs4 import BeautifulSoup
 from typing import Optional, Union, List
 
+from .tefas_requester import TEFASRequester
 from data_struct import AssetDistribution, Asset, Price, Utils
 
 
-    BASE_URL = "https://www.tefas.gov.tr/FonAnaliz.aspx?FonKod={code}"
-    HEADERS = {
-        'host': 'www.tefas.gov.tr'
-    }
 class FundFetcher:
+    URL_ENDPOINT = "FonAnaliz.aspx?FonKod={code}"
 
     TRANSLATION_MAIN_INDICATORS = {
         "Kategorisi": "category",
@@ -39,29 +34,17 @@ class FundFetcher:
 
     def __init__(self, code):
         self.code = code
-        self.url = self.BASE_URL.format(code=self.code)
-        self.soup = self.get_soup()
-
-    def get_soup(self) -> BeautifulSoup:
-        retries = 3
-        delay = 0.5
-
-        for attempt in range(retries):
-            try:
-                response = requests.get(self.url, headers=self.HEADERS, timeout=5)
-                response.raise_for_status()
-                return BeautifulSoup(response.text, 'html.parser')
-            except (requests.exceptions.RequestException, requests.exceptions.ConnectionError) as e:
-                if attempt < retries - 1:
-                    time.sleep(delay * (attempt + 1))
-                else:
-                    raise e
+        self.soup = TEFASRequester.get_soup(
+            self.URL_ENDPOINT.format(code=self.code),
+            timeout=5,
+        )
 
     def extract_main_indicators(self) -> dict:
-        data = {}
         main_div = self.soup.find('div', class_='main-indicators')
         if not main_div:
-            return data
+            return {}
+
+        data = {}
 
         fund_name_tag = main_div.find('span', id='MainContent_FormViewMainIndicators_LabelFund')
         if fund_name_tag:

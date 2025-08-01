@@ -17,25 +17,27 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 
-import requests
-from typing import List
+from typing import List, Dict, Union
+
+from .tefas_requester import TEFASRequester
+from data_struct import Founder
 
 
 class FundCodeFetcher:
-    URL = "https://www.tefas.gov.tr/api/DB/BindComparisonManagementFees"
-    HEADERS = {
-        "Content-Length": "23",
-        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-        "Host": "www.tefas.gov.tr"
-    }
+    URL_ENDPOINT = "api/DB/BindComparisonManagementFees"
     PAYLOAD = {
         "fontip": "YAT",
-        "islemdurum": "1"
     }
 
-    def fetch_sorted_fund_codes(self) -> List[str]:
-        response = requests.post(self.URL, headers=self.HEADERS, data=self.PAYLOAD)
-        response.raise_for_status()
+    @staticmethod
+    def fetch_tefas_fund_codes() -> List[Dict[str, Union[str, Founder]]]:
+        payload = {"islemdurum": "1", **FundCodeFetcher.PAYLOAD}
+        return FundCodeFetcher._fetch_fund_codes(payload)
+
+    @staticmethod
+    def _fetch_fund_codes(payload: dict) -> List[Dict[str, Union[str, Founder]]]:
+        response = TEFASRequester.post_request(FundCodeFetcher.URL_ENDPOINT, data=payload)
+        response_data = response.json().get("data", [])
 
         data = response.json().get("data", [])
         fund_codes = sorted(item["FONKODU"] for item in data if "FONKODU" in item)

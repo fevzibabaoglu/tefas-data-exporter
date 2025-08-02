@@ -44,11 +44,15 @@ class FundDataManager:
         fund_codes_data = FundCodeFetcher.fetch_tefas_fund_codes()
 
         if self.additional_founders:
-            founder_fund_codes = []
+            existing_codes = {data['fund_code'] for data in fund_codes_data}
+
             for founder in self.additional_founders:
                 codes = FundCodeFetcher.fetch_founder_fund_codes(founder)
-                founder_fund_codes.extend(codes)
-            fund_codes_data.extend(founder_fund_codes)
+
+                for code in codes:
+                    if code['fund_code'] not in existing_codes:
+                        fund_codes_data.append(code)
+                        existing_codes.add(code['fund_code'])
 
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             futures = {

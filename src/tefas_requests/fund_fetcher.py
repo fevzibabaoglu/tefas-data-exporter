@@ -19,6 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import ast
 import re
+from enum import Enum, auto
 from typing import Optional, Union, List
 
 from .tefas_requester import TEFASRequester
@@ -120,8 +121,8 @@ class FundFetcher:
     def extract_asset_distribution(self) -> List[AssetDistribution]:
         scripts = "".join(str(tag) for tag in self.soup.find_all('script', type='text/javascript'))
 
-        match_pie = self._asset_distribution_pie_regex(scripts)
-        match_column = self._asset_distribution_column_regex(scripts)
+        match_pie = self.AssetDistributionParser._parse_asset_distribution(scripts, self.AssetDistributionParser.PIE)
+        match_column = self.AssetDistributionParser._parse_asset_distribution(scripts, self.AssetDistributionParser.COLUMN)
 
         if match_pie:
             asset_pairs = match_pie
@@ -162,31 +163,6 @@ class FundFetcher:
         return asset
 
     @staticmethod
-    def _asset_distribution_pie_regex(string: str) -> Optional[List]:
-        match = re.search(
-            r"chartMainContent_PieChartFonDagilim.*?series.*?data.*?(\[.*?\]),[^\]]*?showInLegend",
-            string, re.DOTALL,
-        )
-        if not match:
-            return None
-
-        match_data = ast.literal_eval(match.group(1))
-        return match_data
-
-    @staticmethod
-    def _asset_distribution_column_regex(string: str) -> Optional[List]:
-        match = re.search(
-            r"chartMainContent_ColumnChartFonDagilim.*?series: (\[\{.*?\}\])",
-            string, re.DOTALL,
-        )
-        if not match:
-            return None
-
-        match_data = ast.literal_eval(match.group(1))
-        asset_pairs = [(item['name'], item['data'][0]) for item in match_data]
-        return asset_pairs
-
-    @staticmethod
     def _clean_main_indicator_value(value: str) -> Optional[Union[str]]:
         if not value:
             return None
@@ -214,3 +190,40 @@ class FundFetcher:
             return False
 
         return value
+
+
+    class AssetDistributionParser(Enum):
+        PIE = auto()
+        COLUMN = auto()
+
+        @staticmethod
+        def _parse_asset_distribution(string: str, type: "FundFetcher.AssetDistributionParser") -> Optional[List]:
+            if type == FundFetcher.AssetDistributionParser.PIE:
+                return FundFetcher.AssetDistributionParser.__asset_distribution_pie_regex(string)
+            elif type == FundFetcher.AssetDistributionParser.COLUMN:
+                return FundFetcher.AssetDistributionParser.__asset_distribution_column_regex(string)
+
+        @staticmethod
+        def __asset_distribution_pie_regex(string: str) -> Optional[List]:
+            match = re.search(
+                r"chartMainContent_PieChartFonDagilim.*?series.*?data.*?(\[.*?\]),[^\]]*?showInLegend",
+                string, re.DOTALL,
+            )
+            if not match:
+                return None
+
+            match_data = ast.literal_eval(match.group(1))
+            return match_data
+
+        @staticmethod
+        def __asset_distribution_column_regex(string: str) -> Optional[List]:
+            match = re.search(
+                r"chartMainContent_ColumnChartFonDagilim.*?series: (\[\{.*?\}\])",
+                string, re.DOTALL,
+            )
+            if not match:
+                return None
+
+            match_data = ast.literal_eval(match.group(1))
+            asset_pairs = [(item['name'], item['data'][0]) for item in match_data]
+            return asset_pairs

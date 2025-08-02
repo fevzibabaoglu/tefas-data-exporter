@@ -30,9 +30,8 @@ class Utils:
         # This is useful for handling NaN values in integer columns
         df = df.apply(
             lambda col: col.astype('Int64')
-            if pd.api.types.is_numeric_dtype(col) and \
-                not pd.api.types.is_bool_dtype(col) and \
-                col.dropna().apply(float.is_integer).all() \
+            if pd.api.types.is_float_dtype(col) and \
+                col.dropna().apply(float.is_integer).all()
             else col
         )
         return df

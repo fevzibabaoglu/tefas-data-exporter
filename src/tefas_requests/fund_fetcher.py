@@ -130,7 +130,7 @@ class FundFetcher:
         else:
             return []
 
-        distribution = [(asset, self._clean_distribution_value(percent)) for asset, percent in asset_pairs]
+        distribution = [(asset, percent) for asset, percent in asset_pairs]
         distribution.sort(key=lambda x: x[1], reverse=True)
 
         distribution_list = [
@@ -228,15 +228,3 @@ class FundFetcher:
             pass
 
         return cleaned_value
-
-    @staticmethod
-    def _clean_distribution_value(value: str) -> Optional[Union[str, float]]:
-        if not value:
-            return None
-
-        try:
-            return float(value)
-        except ValueError:
-            pass
-
-        return value

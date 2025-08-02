@@ -65,7 +65,7 @@ class FundDataManager:
                 try:
                     future.result()
                 except Exception as e:
-                    print(f"Error fetching fund {code}: {e}")
+                    tqdm.write(f"Error fetching fund {code}: {e}")
 
         return self.data
 

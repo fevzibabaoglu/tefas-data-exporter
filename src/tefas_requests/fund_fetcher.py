@@ -68,7 +68,7 @@ class FundFetcher:
                 continue
 
             value = strings[1] if len(strings) >= 2 else None
-            data[translated] = self._clean_main_indicator_value(value)
+            data[translated] = self.ValueParser._parse_value(value, self.ValueParser.MAIN_INDICATOR)
 
         return data
 
@@ -91,7 +91,7 @@ class FundFetcher:
                     continue
 
                 value = item.get_text(strip=True)
-                data[header_translated] = self._clean_fund_profile_value(value)
+                data[header_translated] = self.ValueParser._parse_value(value, self.ValueParser.FUND_PROFILE)
 
         return data
 
@@ -162,34 +162,45 @@ class FundFetcher:
         )
         return asset
 
-    @staticmethod
-    def _clean_main_indicator_value(value: str) -> Optional[Union[str]]:
-        if not value:
-            return None
 
-        cleaned_value = value.strip().replace('.', '').replace(',', '.').strip('%')
+    class ValueParser(Enum):
+        MAIN_INDICATOR = auto()
+        FUND_PROFILE = auto()
 
-        try:
-            return float(cleaned_value)
-        except ValueError:
-            pass
+        @staticmethod
+        def _parse_value(value: str, context: "FundFetcher.ValueParser") -> Optional[Union[str, int, float, bool]]:
+            if value is None:
+                return None
 
-        return cleaned_value
+            value = value.strip()
+            if value == "":
+                return None
 
-    @staticmethod
-    def _clean_fund_profile_value(value: str) -> Optional[Union[str, int, bool]]:
-        if not value:
-            return None
+            if context == FundFetcher.ValueParser.MAIN_INDICATOR:
+                return FundFetcher.ValueParser.__parse_as_main_indicator(value)
+            if context == FundFetcher.ValueParser.FUND_PROFILE:
+                return FundFetcher.ValueParser.__parse_as_fund_profile(value)
 
-        if value.isdigit():
-            return int(value)
+            return value
 
-        if value == "TEFAS'ta işlem görüyor":
-            return True
-        if value == "TEFAS'ta İşlem Görmüyor":
-            return False
+        @staticmethod
+        def __parse_as_main_indicator(value: str) -> Union[float, str]:
+            value = value.replace('.', '').replace(',', '.').strip('%')
+            try:
+                return float(value)
+            except ValueError:
+                return value
 
-        return value
+        @staticmethod
+        def __parse_as_fund_profile(value: str) -> Union[int, bool, str]:
+            value = value.replace('.', '')
+            if value.isdigit():
+                return int(value)
+            if value.lower() == "tefas'ta işlem görüyor":
+                return True
+            if value.lower() == "tefas'ta işlem görmüyor":
+                return False
+            return value
 
 
     class AssetDistributionParser(Enum):

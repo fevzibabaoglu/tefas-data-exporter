@@ -196,9 +196,9 @@ class FundFetcher:
             value = value.replace('.', '')
             if value.isdigit():
                 return int(value)
-            if value.lower() == "tefas'ta işlem görüyor":
+            if value == "TEFAS'ta işlem görüyor":
                 return True
-            if value.lower() == "tefas'ta işlem görmüyor":
+            if value == "TEFAS'ta İşlem Görmüyor":
                 return False
             return value
 

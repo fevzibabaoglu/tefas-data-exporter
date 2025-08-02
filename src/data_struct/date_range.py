@@ -19,7 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from datetime import date
 from dateutil.relativedelta import relativedelta
-from enum import Enum
+from enum import Enum, auto
 
 from .utils import Utils
 
@@ -67,10 +67,10 @@ class DateRange:
 
 
 class TimeFrame(Enum):
-    DAYS = 0
-    WEEKS = 1
-    MONTHS = 2
-    YEARS = 3
+    DAYS = auto()
+    WEEKS = auto()
+    MONTHS = auto()
+    YEARS = auto()
 
     @staticmethod
     def get_date_range(time_frame: 'TimeFrame', time_amount: int, end_date: date) -> DateRange:

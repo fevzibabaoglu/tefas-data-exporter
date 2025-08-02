@@ -37,7 +37,7 @@ class FundFetcher:
     }
 
 
-    def __init__(self, code: str, founder: Optional[Founder] = None):
+    def __init__(self, code: str, founder: Founder):
         self.code = code
         self.founder = founder
         self.soup = TEFASRequester.get_soup(

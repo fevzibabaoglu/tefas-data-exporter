@@ -65,7 +65,7 @@ class FundDataManager:
 
         return self.data
 
-    def _fetch_fund_data(self, code: str, founder: Optional[Founder] = None) -> None:
+    def _fetch_fund_data(self, code: str, founder: Founder) -> None:
         analyzer = FundFetcher(code, founder)
         asset = analyzer.get_fund_data()
 

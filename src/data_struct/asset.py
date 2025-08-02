@@ -34,9 +34,9 @@ class Asset:
         self,
         code: str,
         name: str,
-        founder: Optional[Founder],
+        founder: Founder,
         category: str,
-        risk_score: int,
+        risk_score: Optional[int],
         is_in_tefas: bool,
         prices: List[Price],
         asset_distributions: List[AssetDistribution],
@@ -62,13 +62,13 @@ class Asset:
     def get_name(self) -> str:
         return self.name
 
-    def get_founder(self) -> Optional[Founder]:
+    def get_founder(self) -> Founder:
         return self.founder
 
     def get_category(self) -> str:
         return self.category
 
-    def get_risk_score(self) -> int:
+    def get_risk_score(self) -> Optional[int]:
         return self.risk_score
 
     def is_in_tefas(self) -> bool:
@@ -107,7 +107,7 @@ class Asset:
         return {
             "code": self.get_code(),
             "name": self.get_name(),
-            "founder": self.get_founder().to_dict() if self.get_founder() else None,
+            "founder": self.get_founder().to_dict(),
             "category": self.get_category(),
             "risk_score": self.get_risk_score(),
             "is_in_tefas": self.is_in_tefas(),
@@ -174,17 +174,17 @@ class Asset:
             raise ValueError("Asset name cannot be empty.")
         if not isinstance(self.get_name(), str):
             raise ValueError("Asset name must be a string.")
-        if self.get_founder() is not None and not isinstance(self.get_founder(), Founder):
+        if self.get_founder() is None:
+            raise ValueError("Asset founder cannot be None.")
+        if not isinstance(self.get_founder(), Founder):
             raise ValueError("Asset founder must be a Founder instance.")
         if not self.get_category():
             raise ValueError("Asset category cannot be empty.")
         if not isinstance(self.get_category(), str):
             raise ValueError("Asset category must be a string.")
-        if not self.get_risk_score():
-            raise ValueError("Asset risk score cannot be empty.")
-        if not isinstance(self.get_risk_score(), int):
+        if self.get_risk_score() is not None and not isinstance(self.get_risk_score(), int):
             raise ValueError("Asset risk score must be an integer.")
-        if self.get_risk_score() <= 0:
+        if self.get_risk_score() is not None and self.get_risk_score() <= 0:
             raise ValueError("Asset risk score must be a positive integer.")
         if self.is_in_tefas() is None:
             raise ValueError("Asset TEFAS status cannot be None.")

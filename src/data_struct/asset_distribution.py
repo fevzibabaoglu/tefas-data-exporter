@@ -54,6 +54,6 @@ class AssetDistribution:
             raise ValueError("Distribution amount cannot be empty.")
         if not isinstance(self.get_distribution_amount(), float):
             raise ValueError("Distribution amount must be a float number.")
-        if self.get_distribution_amount() < 0:
-            raise ValueError("Distribution amount cannot be negative.")
-        return 
+        if self.get_distribution_amount() == 0.0:
+            raise ValueError("Distribution amount cannot be zero.")
+        return True

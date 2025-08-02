@@ -17,6 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 
+import ast
 import re
 from typing import Optional, Union, List
 
@@ -112,20 +113,23 @@ class FundFetcher:
                 value=p,
             )
             for d, p in zip(dates, prices)
+            if p != 0.0
         ]
         return price_list
 
     def extract_asset_distribution(self) -> List[AssetDistribution]:
         scripts = "".join(str(tag) for tag in self.soup.find_all('script', type='text/javascript'))
 
-        match = re.search(
-            r"chartMainContent_PieChartFonDagilim.*?series.*?data.*?\[(.*?)\],[^\]]*?showInLegend",
-            scripts, re.DOTALL
-        )
-        if not match:
+        match_pie = self._asset_distribution_pie_regex(scripts)
+        match_column = self._asset_distribution_column_regex(scripts)
+
+        if match_pie:
+            asset_pairs = match_pie
+        elif match_column:
+            asset_pairs = match_column
+        else:
             return []
 
-        asset_pairs = re.findall(r'\["(.*?)",([\d.]+)\]', match.group(1))
         distribution = [(asset, self._clean_distribution_value(percent)) for asset, percent in asset_pairs]
         distribution.sort(key=lambda x: x[1], reverse=True)
 
@@ -135,6 +139,7 @@ class FundFetcher:
                 distribution_amount=amount / 100,
             )
             for asset, amount in distribution
+            if amount != 0.0
         ]
         return distribution_list
 
@@ -155,6 +160,31 @@ class FundFetcher:
             asset_distributions=asset_distribution,
         )
         return asset
+
+    @staticmethod
+    def _asset_distribution_pie_regex(string: str) -> Optional[List]:
+        match = re.search(
+            r"chartMainContent_PieChartFonDagilim.*?series.*?data.*?(\[.*?\]),[^\]]*?showInLegend",
+            string, re.DOTALL,
+        )
+        if not match:
+            return None
+
+        match_data = ast.literal_eval(match.group(1))
+        return match_data
+
+    @staticmethod
+    def _asset_distribution_column_regex(string: str) -> Optional[List]:
+        match = re.search(
+            r"chartMainContent_ColumnChartFonDagilim.*?series: (\[\{.*?\}\])",
+            string, re.DOTALL,
+        )
+        if not match:
+            return None
+
+        match_data = ast.literal_eval(match.group(1))
+        asset_pairs = [(item['name'], item['data'][0]) for item in match_data]
+        return asset_pairs
 
     @staticmethod
     def _clean_main_indicator_value(value: str) -> Optional[Union[str]]:

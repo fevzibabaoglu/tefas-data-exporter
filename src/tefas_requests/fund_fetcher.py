@@ -98,14 +98,14 @@ class FundFetcher:
         scripts = "".join(str(tag) for tag in self.soup.find_all('script', type='text/javascript'))
 
         match = re.search(
-            r"chartMainContent_FonFiyatGrafik.*?xAxis.*?categories.*?\[(.*?)\].*?series.*?data.*?\[(.*?)\]",
+            r"chartMainContent_FonFiyatGrafik.*?xAxis.*?categories.*?(\[.*?\]).*?series.*?data.*?(\[.*?\])",
             scripts, re.DOTALL
         )
         if not match:
             return []
 
-        dates = [self._clean_price_chart_value(d) for d in match.group(1).split(',')]
-        prices = [self._clean_price_chart_value(p) for p in match.group(2).split(',')]
+        dates = ast.literal_eval(match.group(1))
+        prices = ast.literal_eval(match.group(2))
 
         price_list = [
             Price(
@@ -214,17 +214,3 @@ class FundFetcher:
             return False
 
         return value
-
-    @staticmethod
-    def _clean_price_chart_value(value: str) -> Optional[Union[str, float]]:
-        if not value:
-            return None
-
-        cleaned_value = value.strip().strip('"').strip("'")
-
-        try:
-            return float(cleaned_value)
-        except ValueError:
-            pass
-
-        return cleaned_value

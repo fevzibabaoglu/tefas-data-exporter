@@ -104,10 +104,15 @@ class Asset:
         return self.date_range
 
     def to_dict(self) -> dict:
+        founder = self.get_founder()
+        founder_code = founder.get_code()
+        founder_name = founder.get_name()
+
         return {
             "code": self.get_code(),
             "name": self.get_name(),
-            "founder": self.get_founder().to_dict(),
+            "founder_code": founder_code,
+            "founder_name": founder_name,
             "category": self.get_category(),
             "risk_score": self.get_risk_score(),
             "is_in_tefas": self.is_in_tefas(),
@@ -118,8 +123,9 @@ class Asset:
 
     @classmethod
     def from_dict(cls, data: dict) -> 'Asset':
-        founder_dict = data.get("founder", None)
-        founder = Founder.from_dict(founder_dict) if founder_dict else None
+        founder_code = data.get("founder_code", None)
+        founder_name = data.get("founder_name", None)
+        founder = Founder(code=founder_code, name=founder_name)
 
         price_dicts = data.get("prices", None)
         prices = [

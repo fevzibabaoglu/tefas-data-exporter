@@ -37,6 +37,7 @@ class Asset:
         founder: Founder,
         category: str,
         risk_score: Optional[int],
+        market_share: float,
         is_in_tefas: bool,
         prices: List[Price],
         asset_distributions: List[AssetDistribution],
@@ -46,6 +47,7 @@ class Asset:
         self.founder = founder
         self.category = category
         self.risk_score = risk_score
+        self.market_share = market_share
         self._is_in_tefas = is_in_tefas
         self.asset_distributions = asset_distributions
         self.prices = prices
@@ -70,6 +72,9 @@ class Asset:
 
     def get_risk_score(self) -> Optional[int]:
         return self.risk_score
+
+    def get_market_share(self) -> float:
+        return round(self.market_share, 4)
 
     def is_in_tefas(self) -> bool:
         return self._is_in_tefas
@@ -115,6 +120,7 @@ class Asset:
             "founder_name": founder_name,
             "category": self.get_category(),
             "risk_score": self.get_risk_score(),
+            "market_share": self.get_market_share(),
             "is_in_tefas": self.is_in_tefas(),
             "prices": [price.to_dict() for price in self.get_prices()],
             "asset_distributions": [dist.to_dict() for dist in self.get_asset_distributions()],
@@ -145,6 +151,7 @@ class Asset:
             founder=founder,
             category=data.get("category", None),
             risk_score=data.get("risk_score", None),
+            market_share=data.get("market_share", None),
             is_in_tefas=data.get("is_in_tefas", None),
             prices=prices,
             asset_distributions=asset_distributions,
@@ -192,6 +199,12 @@ class Asset:
             raise ValueError("Asset risk score must be an integer.")
         if self.get_risk_score() is not None and self.get_risk_score() <= 0:
             raise ValueError("Asset risk score must be a positive integer.")
+        if self.get_market_share() is None:
+            raise ValueError("Market share cannot be None.")
+        if not isinstance(self.get_market_share(), float):
+            raise ValueError("Market share must be a float.")
+        if self.get_market_share() < 0:
+            raise ValueError("Market share cannot be negative.")
         if self.is_in_tefas() is None:
             raise ValueError("Asset TEFAS status cannot be None.")
         if not isinstance(self.is_in_tefas(), bool):

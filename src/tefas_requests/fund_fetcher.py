@@ -31,6 +31,7 @@ class FundFetcher:
 
     TRANSLATION_MAIN_INDICATORS = {
         "Kategorisi": "category",
+        "Pazar Payı": "market_share",
     }
     TRANSLATION_FUND_PROFILE = {
         "Fonun Risk Değeri": "risk_score",
@@ -57,7 +58,7 @@ class FundFetcher:
         if fund_name_tag:
             data['name'] = fund_name_tag.text.strip()
 
-        for li in main_div.find(attrs={'class': 'top-list'}).find_all('li'):
+        for li in main_div.find_all('li'):
             strings = list(li.stripped_strings)
             if not strings:
                 continue
@@ -150,12 +151,16 @@ class FundFetcher:
         prices = self.extract_chart_data()
         asset_distribution = self.extract_asset_distribution()
 
+        market_share = main_indicators.get('market_share', None)
+        market_share = market_share / 100 if market_share is not None else None
+
         asset = Asset(
             code=self.code,
             name=main_indicators.get('name', ''),
             founder=self.founder,
             category=main_indicators.get('category', ''),
             risk_score=fund_profile['risk_score'],
+            market_share=market_share,
             is_in_tefas=fund_profile['is_in_tefas'],
             prices=prices,
             asset_distributions=asset_distribution,

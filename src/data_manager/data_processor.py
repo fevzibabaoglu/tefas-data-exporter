@@ -17,71 +17,90 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 
-import ast
 import pandas as pd
+from typing import List
+
+from data_struct import Asset, TimeFrame
 
 
 class DataProcessor:
     pd.set_option('future.no_silent_downcasting', True)
 
+    PRICE_CHANGE_COLUMNS = [
+        {"time_frame": TimeFrame.DAYS, "amount": 1},
+        {"time_frame": TimeFrame.DAYS, "amount": 2},
+        {"time_frame": TimeFrame.DAYS, "amount": 3},
+        {"time_frame": TimeFrame.WEEKS, "amount": 1},
+        {"time_frame": TimeFrame.WEEKS, "amount": 2},
+        {"time_frame": TimeFrame.WEEKS, "amount": 3},
+        {"time_frame": TimeFrame.MONTHS, "amount": 1},
+        {"time_frame": TimeFrame.MONTHS, "amount": 2},
+        {"time_frame": TimeFrame.MONTHS, "amount": 3},
+        {"time_frame": TimeFrame.MONTHS, "amount": 4},
+        {"time_frame": TimeFrame.MONTHS, "amount": 5},
+        {"time_frame": TimeFrame.MONTHS, "amount": 6},
+        {"time_frame": TimeFrame.MONTHS, "amount": 9},
+        {"time_frame": TimeFrame.YEARS, "amount": 1},
+    ]
 
-    def __init__(self, df: pd.DataFrame):
-        self.df = df.copy()
+
+    def __init__(self, assets: List[Asset]):
+        self.assets = assets
 
     def process(self) -> pd.DataFrame:
-        price_df = self._parse_price_change()
+        price_df = self._parse_price_change_ratios()
         dist_df = self._parse_asset_distribution()
 
-        self.df.drop(columns=["price_chart"], errors="ignore", inplace=True)
-        self.df.drop(columns=["price_change_percentage", "asset_distribution"], inplace=True)
-        self.df = pd.concat([self.df, price_df], axis=1)
-        self.df = pd.concat([self.df, dist_df], axis=1)
+        df = pd.DataFrame({
+            'code': [asset.get_code() for asset in self.assets],
+        })
+        df = pd.concat([df, price_df], axis=1)
+        df = pd.concat([df, dist_df], axis=1)
 
-        # Replace placeholders with pd.NA (empty cell)
-        self.df.replace(to_replace=[0, 0.0, ""], value=pd.NA, inplace=True)
-        self.df["risk_score"] = self.df["risk_score"].replace(-1, pd.NA)
+        return df
 
-        return self.df
+    def _parse_price_change_ratios(self):
+        price_change_ratios = []
 
-    def _parse_price_change(self):
-        def _safe_eval_to_series(x):
-            if isinstance(x, dict):
-                return pd.Series(x)
-            elif isinstance(x, str):
-                try:
-                    return pd.Series(ast.literal_eval(x))
-                except Exception:
-                    return pd.Series()
-            else:
-                return pd.Series()
+        for asset in self.assets:
+            asset_price_change = {}
 
-        price_df = self.df["price_change_percentage"].apply(_safe_eval_to_series)
+            for change in self.PRICE_CHANGE_COLUMNS:
+                time_frame = change["time_frame"]
+                amount = change["amount"]
 
-        # Sort price columns
-        price_order = [
-            "1_day", "2_day", "3_day", "7_day", "14_day", "21_day",
-            "1_month", "2_month", "3_month", "4_month", "5_month", "6_month", "9_month",
-            "1_year"
-        ]
-        return price_df[[col for col in price_order if col in price_df.columns]]
+                asset_start_date = asset.get_date_range().get_start_date()
+                asset_end_date = asset.get_date_range().get_end_date()
+                date_range = TimeFrame.get_date_range(time_frame, amount, asset_end_date)
+
+                if asset_start_date > date_range.get_start_date():
+                    continue
+
+                price_change = asset.get_price_change_ratio(date_range)
+                asset_price_change[f"{time_frame.name.lower()}_{amount}"] = price_change
+
+            price_change_ratios.append(asset_price_change)
+
+        return pd.DataFrame(price_change_ratios)
 
     def _parse_asset_distribution(self):
-        def _safe_parse_distribution(x):
-            if isinstance(x, list):
-                return dict(x)
-            elif isinstance(x, str):
-                try:
-                    return dict(ast.literal_eval(x))
-                except Exception:
-                    return {}
-            else:
-                return {}
+        asset_distributions_list = []
 
-        dist_series = self.df["asset_distribution"].apply(_safe_parse_distribution)
+        for asset in self.assets:
+            asset_distribution_dict = {}
 
-        # Turn each list of tuples into a dict: {"Asset": value, ...}
-        dist_dicts = dist_series.apply(lambda lst: dict(lst))
+            for distribution in asset.get_asset_distributions():
+                asset_distribution_dict[distribution.get_distribution_name()] = distribution.get_distribution_amount()
 
-        dist_df = dist_dicts.apply(pd.Series).fillna(0)
-        dist_df = dist_df[sorted(dist_df.columns)]
-        return dist_df
+            asset_distributions_list.append(asset_distribution_dict)
+
+        df = pd.DataFrame(asset_distributions_list)
+
+        if 'Diğer' in df.columns:
+            sorted_columns = sorted(col for col in df.columns if col != 'Diğer')
+            sorted_columns += ['Diğer']
+        else:
+            sorted_columns = sorted(df.columns)
+
+        df = df[sorted_columns]
+        return df

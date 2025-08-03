@@ -17,9 +17,16 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 
-from .founder_fetcher import FounderFetcher
-from .fund_fetcher import FundFetcher
-from .fund_code_fetcher import FundCodeFetcher
+from datetime import datetime, date
 
 
-__all__ = ["FounderFetcher", "FundFetcher", "FundCodeFetcher"]
+class Utils:
+    DATE_FORMAT = "%d.%m.%Y"
+
+    @staticmethod
+    def parse_date(date_str: str) -> date:
+        return datetime.strptime(date_str, Utils.DATE_FORMAT).date()
+
+    @staticmethod
+    def format_date(date_obj: date) -> str:
+        return date_obj.strftime(Utils.DATE_FORMAT)

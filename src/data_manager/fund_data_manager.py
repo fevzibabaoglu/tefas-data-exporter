@@ -17,35 +17,52 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 
-import pandas as pd
 import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
-from typing import List, Dict
+from typing import List, Dict, Optional
 
-from tefas_requests import FundAnalyzer, FundCodeFetcher
+from data_struct import Asset, Founder
+from tefas_requests import FundFetcher, FundCodeFetcher
 
 
 class FundDataManager:
     def __init__(
         self,
-        fund_code_fetcher: FundCodeFetcher,
-        include_price_chart: bool = False,
-        max_workers: int = 16
+        fund_price_range: Optional[str] = None,
+        additional_founders: Optional[List[Founder]] = None,
+        max_workers: int = 16,
     ):
-        self.fund_code_fetcher = fund_code_fetcher
-        self.include_price_chart = include_price_chart
+        self.fund_price_range = fund_price_range
+        self.additional_founders = additional_founders
         self.max_workers = max_workers
+
         self.lock = threading.Lock()
         self.data: List[Dict] = []
 
-    def fetch_all_fund_data(self) -> pd.DataFrame:
-        fund_codes = self.fund_code_fetcher.fetch_sorted_fund_codes()
+    def fetch_all_fund_data(self) -> List[Asset]:
+        fund_codes_data = FundCodeFetcher.fetch_tefas_fund_codes()
+
+        if self.additional_founders:
+            existing_codes = {data['fund_code'] for data in fund_codes_data}
+
+            for founder in self.additional_founders:
+                codes = FundCodeFetcher.fetch_founder_fund_codes(founder)
+
+                for code in codes:
+                    if code['fund_code'] not in existing_codes:
+                        fund_codes_data.append(code)
+                        existing_codes.add(code['fund_code'])
 
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             futures = {
-                executor.submit(self._fetch_and_store, code): code
-                for code in fund_codes
+                executor.submit(
+                    self._fetch_fund_data,
+                    data['fund_code'],
+                    data['founder'],
+                    self.fund_price_range,
+                ): data['fund_code']
+                for data in fund_codes_data
             }
 
             for future in tqdm(as_completed(futures), total=len(futures), desc="Fetching funds", unit="fund"):
@@ -53,13 +70,13 @@ class FundDataManager:
                 try:
                     future.result()
                 except Exception as e:
-                    print(f"Error fetching fund {code}: {e}")
+                    tqdm.write(f"Error fetching fund {code}: {e}")
 
-        return pd.DataFrame(self.data)
+        return self.data
 
-    def _fetch_and_store(self, code: str):
-        analyzer = FundAnalyzer(code)
-        fund_data = analyzer.get_fund_data(include_price_chart=self.include_price_chart)
+    def _fetch_fund_data(self, code: str, founder: Founder, fund_price_range: Optional[str] = None) -> None:
+        analyzer = FundFetcher(code, founder, fund_price_range)
+        asset = analyzer.get_fund_data()
 
         with self.lock:
-            self.data.append(fund_data)
+            self.data.append(asset)

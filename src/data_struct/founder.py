@@ -17,9 +17,25 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 
-from .founder_fetcher import FounderFetcher
-from .fund_fetcher import FundFetcher
-from .fund_code_fetcher import FundCodeFetcher
+class Founder:
+    def __init__(self, code: str, name: str):
+        self.code = code
+        self.name = name
+        self._check_validity()
 
+    def get_code(self) -> str:
+        return self.code
 
-__all__ = ["FounderFetcher", "FundFetcher", "FundCodeFetcher"]
+    def get_name(self) -> str:
+        return self.name
+
+    def _check_validity(self) -> bool:
+        if not self.get_code():
+            raise ValueError("Code cannot be empty.")
+        if not isinstance(self.get_code(), str):
+            raise ValueError("Code must be a string.")
+        if not self.get_name():
+            raise ValueError("Name cannot be empty.")
+        if not isinstance(self.get_name(), str):
+            raise ValueError("Name must be a string.")
+        return True

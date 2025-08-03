@@ -17,9 +17,21 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 
-from .founder_fetcher import FounderFetcher
-from .fund_fetcher import FundFetcher
-from .fund_code_fetcher import FundCodeFetcher
+import pandas as pd
 
 
-__all__ = ["FounderFetcher", "FundFetcher", "FundCodeFetcher"]
+class Utils:
+    @staticmethod
+    def postprocess_dataframe(df: pd.DataFrame) -> pd.DataFrame:
+        if df.empty:
+            return df
+
+        # Convert numeric columns to Int64 if they are all integers
+        # This is useful for handling NaN values in integer columns
+        df = df.apply(
+            lambda col: col.astype('Int64')
+            if pd.api.types.is_float_dtype(col) and \
+                col.dropna().apply(float.is_integer).all()
+            else col
+        )
+        return df

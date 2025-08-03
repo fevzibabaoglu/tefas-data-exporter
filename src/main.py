@@ -49,6 +49,10 @@ def main():
         help='List of founder codes for additional fetching.'
     )
     parser.add_argument(
+        '--range', type=str,
+        help="The time range for which to fetch data. (default: 'YEAR_1')"
+    )
+    parser.add_argument(
         "--max-workers", type=int, default=16,
         help="Maximum number of workers for fetching data. (default: 16)"
     )
@@ -68,6 +72,7 @@ def main():
 
     if not args.input:
         manager = FundDataManager(
+            fund_price_range=args.range,
             additional_founders=args.founders,
             max_workers=args.max_workers,
         )

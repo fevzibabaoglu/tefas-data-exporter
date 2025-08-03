@@ -31,11 +31,10 @@ class TEFASRequester:
         "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
     }
     RETRIES = 5
-    DELAY = 0.3
+    DELAY = 0.5
 
     @staticmethod
-    def get_soup(url: str, headers: dict = {}, *args, **kwargs) -> BeautifulSoup:
-        response = TEFASRequester.get_request(url, headers=headers, *args, **kwargs)
+    def get_soup(response: requests.Response) -> BeautifulSoup:
         return BeautifulSoup(response.text, 'html.parser')
 
     @staticmethod
@@ -51,13 +50,57 @@ class TEFASRequester:
         return TEFASRequester._request("POST", url_endpoint, headers=headers, data=data, *args, **kwargs)
 
     @staticmethod
+    def postback_request(url_endpoint: str, headers: dict = {}, form_data: dict = {}, *args, **kwargs) -> requests.Response:
+        with requests.Session() as session:
+            session.headers.update({**TEFASRequester.BASE_HEADERS, **headers})
+
+            response = TEFASRequester._request_with_session(
+                session, "GET", url_endpoint, *args, **kwargs,
+            )
+            soup = TEFASRequester.get_soup(response)
+
+            # Postback form data
+            data = {}
+
+            # Find all <input> tags and extract their name and value
+            for input_tag in soup.find_all('input'):
+                name = input_tag.get('name')
+                if name:
+                    data[name] = input_tag.get('value', '')
+
+            # Find <select> tags if any exist
+            for select_tag in soup.find_all('select'):
+                name = select_tag.get('name')
+                selected_option = select_tag.find('option', selected=True)
+                if name and selected_option:
+                    data[name] = selected_option.get('value', '')
+
+            form_data = {**data, **form_data}
+            return TEFASRequester._request_with_session(
+                session, "POST", url_endpoint, data=form_data, *args, **kwargs,
+            )
+
+    @staticmethod
     def _request(method: str, url_endpoint: str, headers: dict = {}, data: Optional[dict] = None, *args, **kwargs) -> requests.Response:
+        with requests.Session() as session:
+            session.headers.update({**TEFASRequester.BASE_HEADERS, **headers})
+            return TEFASRequester._request_with_session(
+                session, method, url_endpoint, headers=headers, data=data, *args, **kwargs,
+            )
+
+    @staticmethod
+    def _request_with_session(
+        session: requests.Session,
+        method: str,
+        url_endpoint: str,
+        data: Optional[dict] = None,
+        *args, **kwargs,
+    ) -> requests.Response:
         url = f"{TEFASRequester.BASE_URL}/{url_endpoint}"
-        headers = {**TEFASRequester.BASE_HEADERS, **headers}
 
         for attempt in range(TEFASRequester.RETRIES):
             try:
-                response = requests.request(method, url, headers=headers, data=data, *args, **kwargs)
+                response = session.request(method, url, data=data, *args, **kwargs)
                 response.raise_for_status()
                 return response
             except (requests.exceptions.RequestException, requests.exceptions.ConnectionError) as e:

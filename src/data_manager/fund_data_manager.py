@@ -29,9 +29,11 @@ from tefas_requests import FundFetcher, FundCodeFetcher
 class FundDataManager:
     def __init__(
         self,
+        fund_price_range: Optional[str] = None,
         additional_founders: Optional[List[Founder]] = None,
         max_workers: int = 16,
     ):
+        self.fund_price_range = fund_price_range
         self.additional_founders = additional_founders
         self.max_workers = max_workers
 
@@ -54,7 +56,12 @@ class FundDataManager:
 
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             futures = {
-                executor.submit(self._fetch_fund_data, data['fund_code'], data['founder']): data['fund_code']
+                executor.submit(
+                    self._fetch_fund_data,
+                    data['fund_code'],
+                    data['founder'],
+                    self.fund_price_range,
+                ): data['fund_code']
                 for data in fund_codes_data
             }
 
@@ -67,8 +74,8 @@ class FundDataManager:
 
         return self.data
 
-    def _fetch_fund_data(self, code: str, founder: Founder) -> None:
-        analyzer = FundFetcher(code, founder)
+    def _fetch_fund_data(self, code: str, founder: Founder, fund_price_range: Optional[str] = None) -> None:
+        analyzer = FundFetcher(code, founder, fund_price_range)
         asset = analyzer.get_fund_data()
 
         with self.lock:

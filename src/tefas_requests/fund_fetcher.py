@@ -19,6 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import ast
 import re
+from bs4 import BeautifulSoup
 from enum import Enum, auto
 from typing import Optional, Union, List
 
@@ -28,6 +29,9 @@ from data_struct import AssetDistribution, Asset, Founder, Price, Utils
 
 class FundFetcher:
     URL_ENDPOINT = "FonAnaliz.aspx?FonKod={code}"
+    BASE_FORM_DATA_TEMPLATE = {
+        'ctl00$MainContent$RadioButtonListPeriod': '{value}',
+    }
 
     TRANSLATION_MAIN_INDICATORS = {
         "Kategorisi": "category",
@@ -39,12 +43,13 @@ class FundFetcher:
     }
 
 
-    def __init__(self, code: str, founder: Founder):
+    def __init__(self, code: str, founder: Founder, fund_price_range: Optional[str] = None):
         self.code = code
         self.founder = founder
-        self.soup = TEFASRequester.get_soup(
+        self.soup = FundFetcher.FundRequester.get_soup(
+            FundFetcher.FundRequester.get_fund_requester_type(fund_price_range),
             self.URL_ENDPOINT.format(code=self.code),
-            timeout=5,
+            timeout=20,
         )
 
     def extract_main_indicators(self) -> dict:
@@ -166,6 +171,44 @@ class FundFetcher:
             asset_distributions=asset_distribution,
         )
         return asset
+
+
+    class FundRequester(Enum):
+        WEEK_1 = '13'
+        MONTH_1 = '1'
+        MONTH_3 = '3'
+        MONTH_6 = '6'
+        YEAR_START = '0'
+        YEAR_1 = '12'
+        YEAR_3 = '36'
+        YEAR_5 = '60'
+
+        @staticmethod
+        def get_fund_requester_type(value: Optional[str] = None) -> "FundFetcher.FundRequester":
+            if value is None:
+                return FundFetcher.FundRequester.YEAR_1
+            try:
+                return FundFetcher.FundRequester[value.upper()]
+            except KeyError:
+                raise ValueError(f"'{value}' is not a valid period.")
+
+        @staticmethod
+        def get_soup(request_range: "FundFetcher.FundRequester", url_endpoint: str, *args, **kwargs) -> BeautifulSoup:
+            if request_range == FundFetcher.FundRequester.YEAR_1:
+                response = TEFASRequester.get_request(url_endpoint, *args, **kwargs)
+            else:
+                form_data = FundFetcher.FundRequester._format_form_data(request_range)
+                response = TEFASRequester.postback_request(url_endpoint, form_data=form_data, *args, **kwargs)
+
+            return TEFASRequester.get_soup(response)
+
+        @staticmethod
+        def _format_form_data(request_range: "FundFetcher.FundRequester") -> dict:
+            value = request_range.value
+            return {
+                key: v.format(value=value)
+                for key, v in FundFetcher.BASE_FORM_DATA_TEMPLATE.items()
+            }
 
 
     class ValueParser(Enum):

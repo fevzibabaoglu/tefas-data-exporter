@@ -29,7 +29,8 @@ class FounderFetcher:
 
     @staticmethod
     def fetch_founders() -> List[Founder]:
-        soup = TEFASRequester.get_soup(FounderFetcher.URL_ENDPOINT, timeout=5)
+        response = TEFASRequester.get_request(FounderFetcher.URL_ENDPOINT, timeout=5)
+        soup = TEFASRequester.get_soup(response)
         select = soup.find('select', id='DropDownListFounderYAT')
         options = select.find_all('option')
         

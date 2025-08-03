@@ -29,20 +29,12 @@ from tefas_requests import FounderFetcher, FundCodeFetcher
 def main():
     parser = argparse.ArgumentParser(description="TEFAS Data Exporter")
     parser.add_argument(
-        "--input", type=str, default=None,
+        "--input", type=str,
         help="Optional path to a raw fund CSV. If provided, skips fetching real-time data."
     )
     parser.add_argument(
         "--output", type=str, default="output",
         help="Output directory to save the files. (default: 'output')"
-    )
-    parser.add_argument(
-        "--include-price-chart", action="store_true",
-        help="Include price chart data in raw data."
-    )
-    parser.add_argument(
-        "--max-workers", type=int, default=16,
-        help="Maximum number of workers for fetching data. (default: 16)"
     )
     parser.add_argument(
         "--no-processed", action="store_true",
@@ -55,6 +47,10 @@ def main():
     parser.add_argument(
         '--founders', nargs='+', type=str,
         help='List of founder codes for additional fetching.'
+    )
+    parser.add_argument(
+        "--max-workers", type=int, default=16,
+        help="Maximum number of workers for fetching data. (default: 16)"
     )
     args = parser.parse_args()
 
@@ -72,9 +68,8 @@ def main():
 
     if not args.input:
         manager = FundDataManager(
-            include_price_chart=args.include_price_chart,
-            max_workers=args.max_workers,
             additional_founders=args.founders,
+            max_workers=args.max_workers,
         )
 
         assets = manager.fetch_all_fund_data()

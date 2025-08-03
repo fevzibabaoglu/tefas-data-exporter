@@ -156,9 +156,9 @@ class FundFetcher:
 
         asset = Asset(
             code=self.code,
-            name=main_indicators.get('name', ''),
+            name=main_indicators.get('name', None),
             founder=self.founder,
-            category=main_indicators.get('category', ''),
+            category=main_indicators.get('category', None),
             risk_score=fund_profile['risk_score'],
             market_share=market_share,
             is_in_tefas=fund_profile['is_in_tefas'],

@@ -29,13 +29,11 @@ from tefas_requests import FundFetcher, FundCodeFetcher
 class FundDataManager:
     def __init__(
         self,
-        include_price_chart: bool = False,
-        max_workers: int = 16,
         additional_founders: Optional[List[Founder]] = None,
+        max_workers: int = 16,
     ):
-        self.include_price_chart = include_price_chart
-        self.max_workers = max_workers
         self.additional_founders = additional_founders
+        self.max_workers = max_workers
 
         self.lock = threading.Lock()
         self.data: List[Dict] = []

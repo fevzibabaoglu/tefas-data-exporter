@@ -17,7 +17,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 
-from typing import List, Dict, Union
+from typing import List, Dict
 
 from .tefas_requester import TEFASRequester
 from data_struct import Founder
@@ -38,21 +38,21 @@ class FundCodeFetcher:
 
 
     @staticmethod
-    def fetch_tefas_fund_codes() -> List[Dict[str, Union[str, Founder]]]:
+    def fetch_tefas_fund_codes() -> Dict[str, Founder]:
         payload = {"islemdurum": "1", **FundCodeFetcher.PAYLOAD}
         return FundCodeFetcher._fetch_fund_codes(payload)
 
     @staticmethod
-    def fetch_founder_fund_codes(founder_code: str) -> List[Dict[str, Union[str, Founder]]]:
+    def fetch_founder_fund_codes(founder_code: str) -> Dict[str, Founder]:
         payload = {"kurucukod": founder_code, **FundCodeFetcher.PAYLOAD}
         return FundCodeFetcher._fetch_fund_codes(payload)
 
     @staticmethod
-    def _fetch_fund_codes(payload: dict) -> List[Dict[str, Union[str, Founder]]]:
+    def _fetch_fund_codes(payload: dict) -> Dict[str, Founder]:
         response = TEFASRequester.post_request(FundCodeFetcher.URL_ENDPOINT, data=payload)
         response_data = response.json().get("data", [])
 
-        data = []
+        data = {}
         for item in response_data:
             fund_code = item.get("FONKODU", None)
             founder_code = item.get("KURUCUKODU", None)
@@ -62,10 +62,6 @@ class FundCodeFetcher:
                         else None
 
             if fund_code:
-                data.append({
-                    "fund_code": fund_code,
-                    "founder": founder,
-                })
+                data.update({fund_code: founder})
 
-        data.sort(key=lambda x: x["fund_code"])
         return data

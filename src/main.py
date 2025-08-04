@@ -78,7 +78,8 @@ def main():
             max_workers=args.max_workers,
         )
 
-        assets = manager.fetch_all_fund_data()
+        fund_codes_data = manager.get_fund_codes_data()
+        assets = manager.fetch_fund_data(fund_codes_data)
         raw_df = pd.DataFrame([obj.to_dict() for obj in assets])
         raw_df = DataFrameUtils.postprocess_dataframe(raw_df)
 

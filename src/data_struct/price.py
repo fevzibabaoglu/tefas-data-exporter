@@ -33,7 +33,7 @@ class Price:
 
     def get_value(self) -> float:
         return self.value
-    
+
     def to_dict(self) -> dict:
         return {
             "date": DateUtils.format_date(self.get_date()),

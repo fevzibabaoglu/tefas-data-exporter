@@ -36,7 +36,7 @@ class PriceUpdater:
             asset.get_date_range().get_end_date()
             for asset in self.code_asset_dict.values()
         )
-    
+
     def update_prices(self) -> List[Asset]:
         last_date = self.get_last_date()
         date_range = DateRange(

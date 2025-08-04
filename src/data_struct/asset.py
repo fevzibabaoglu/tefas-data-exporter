@@ -80,7 +80,7 @@ class Asset:
 
     def get_asset_distributions(self) -> List[AssetDistribution]:
         return self.asset_distributions
-    
+
     def get_last_price(self) -> Price:
         return self.get_prices()[-1]
 

@@ -38,10 +38,14 @@ class PriceUpdater:
         )
 
     def update_prices(self) -> List[Asset]:
-        last_date = self.get_last_date()
+        start_date = self.get_last_date() + relativedelta(days=1)
+        end_date = DateUtils.get_today()
+        if start_date > end_date:
+            raise ValueError("Data is already up to date.")
+
         date_range = DateRange(
-            start_date=last_date + relativedelta(days=1),
-            end_date=DateUtils.get_today()
+            start_date=start_date,
+            end_date=end_date
         )
 
         new_asset_codes = []

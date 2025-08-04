@@ -19,7 +19,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from datetime import date
 
-from .utils import Utils
+from utils import DateUtils
 
 
 class Price:
@@ -33,10 +33,10 @@ class Price:
 
     def get_value(self) -> float:
         return self.value
-    
+
     def to_dict(self) -> dict:
         return {
-            "date": Utils.format_date(self.get_date()),
+            "date": DateUtils.format_date(self.get_date()),
             "value": self.get_value(),
         }
 
@@ -46,7 +46,7 @@ class Price:
         value_str = data.get("value", None)
 
         return cls(
-            date=Utils.parse_date(date_str) if date_str else None,
+            date=DateUtils.parse_date(date_str) if date_str else None,
             value=float(value_str) if value_str else None,
         )
 

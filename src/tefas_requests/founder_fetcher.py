@@ -33,7 +33,7 @@ class FounderFetcher:
         soup = TEFASRequester.get_soup(response)
         select = soup.find('select', id='DropDownListFounderYAT')
         options = select.find_all('option')
-        
+
         founders = []
         for option in options:
             value = option['value']

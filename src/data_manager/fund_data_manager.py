@@ -30,7 +30,7 @@ class FundDataManager:
     def __init__(
         self,
         fund_price_range: Optional[str] = None,
-        additional_founders: Optional[List[Founder]] = None,
+        additional_founders: Optional[List[str]] = None,
         max_workers: int = 16,
     ):
         self.fund_price_range = fund_price_range
@@ -40,29 +40,25 @@ class FundDataManager:
         self.lock = threading.Lock()
         self.data: List[Dict] = []
 
-    def fetch_all_fund_data(self) -> List[Asset]:
+    def get_fund_codes_data(self) -> Dict[str, Founder]:
         fund_codes_data = FundCodeFetcher.fetch_tefas_fund_codes()
 
         if self.additional_founders:
-            existing_codes = {data['fund_code'] for data in fund_codes_data}
+            existing_codes = fund_codes_data.keys()
 
-            for founder in self.additional_founders:
-                codes = FundCodeFetcher.fetch_founder_fund_codes(founder)
+            for founder_code in self.additional_founders:
+                for fund_code, founder in FundCodeFetcher.fetch_founder_fund_codes(founder_code).items():
+                    if fund_code not in existing_codes:
+                        fund_codes_data.update({fund_code: founder})
 
-                for code in codes:
-                    if code['fund_code'] not in existing_codes:
-                        fund_codes_data.append(code)
-                        existing_codes.add(code['fund_code'])
-
+    def fetch_fund_data(self, fund_codes_data: Dict[str, Founder]) -> List[Asset]:
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             futures = {
                 executor.submit(
                     self._fetch_fund_data,
-                    data['fund_code'],
-                    data['founder'],
-                    self.fund_price_range,
-                ): data['fund_code']
-                for data in fund_codes_data
+                    fund_code, founder, self.fund_price_range,
+                ): fund_code
+                for fund_code, founder in fund_codes_data.items()
             }
 
             for future in tqdm(as_completed(futures), total=len(futures), desc="Fetching funds", unit="fund"):

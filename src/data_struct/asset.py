@@ -17,16 +17,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 
-import ast
-import numpy as np
 import pandas as pd
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 
 from .asset_distribution import AssetDistribution
 from .date_range import DateRange
 from .founder import Founder
 from .price import Price
+from utils import DataFrameUtils
 
 
 class Asset:
@@ -81,7 +80,7 @@ class Asset:
 
     def get_asset_distributions(self) -> List[AssetDistribution]:
         return self.asset_distributions
-    
+
     def get_last_price(self) -> Price:
         return self.get_prices()[-1]
 
@@ -107,6 +106,17 @@ class Asset:
 
     def get_date_range(self) -> DateRange:
         return self.date_range
+
+    def extend_prices(self, new_prices: List[Price]):
+        self.get_prices().extend(new_prices)
+        self.date_range = DateRange(
+            start_date=self.get_prices()[0].get_date(),
+            end_date=self.get_prices()[-1].get_date()
+        )
+
+    @staticmethod
+    def get_code_asset_dict(assets: List["Asset"]) -> Dict[str, "Asset"]:
+        return {asset.get_code(): asset for asset in assets}
 
     def to_dict(self) -> dict:
         founder = self.get_founder()
@@ -159,19 +169,8 @@ class Asset:
 
     @classmethod
     def from_csv(cls, csv_path: str) -> List['Asset']:
-        def _parse_to_list(x):
-            if isinstance(x, str):
-                try:
-                    return ast.literal_eval(x)
-                except (ValueError, SyntaxError):
-                    return x
-            return x
-
         df = pd.read_csv(csv_path, encoding="utf-8")
-
-        for col in df.columns:
-            df[col] = df[col].apply(_parse_to_list)
-        df = df.replace({np.nan: None})
+        df = DataFrameUtils.postprocess_dataframe(df)
 
         return [
             cls.from_dict(row)

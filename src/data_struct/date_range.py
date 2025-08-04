@@ -20,8 +20,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from datetime import date
 from dateutil.relativedelta import relativedelta
 from enum import Enum, auto
+from typing import List
 
-from .utils import Utils
+from utils import DateUtils
 
 
 class DateRange:
@@ -35,11 +36,17 @@ class DateRange:
 
     def get_end_date(self) -> date:
         return self.end_date
-    
+
+    def get_all_dates(self) -> List[date]:
+        return [
+            self.get_start_date() + relativedelta(days=i)
+            for i in range((self.get_end_date() - self.get_start_date()).days + 1)
+        ]
+
     def to_dict(self) -> dict:
         return {
-            "start_date": Utils.format_date(self.get_start_date()),
-            "end_date": Utils.format_date(self.get_end_date()),
+            "start_date": DateUtils.format_date(self.get_start_date()),
+            "end_date": DateUtils.format_date(self.get_end_date()),
         }
 
     @classmethod
@@ -48,8 +55,8 @@ class DateRange:
         end_date_str = data.get("end_date", None)
 
         return cls(
-            start_date=Utils.parse_date(start_date_str) if start_date_str else None,
-            end_date=Utils.parse_date(end_date_str) if end_date_str else None,
+            start_date=DateUtils.parse_date(start_date_str) if start_date_str else None,
+            end_date=DateUtils.parse_date(end_date_str) if end_date_str else None,
         )
 
     def _check_validity(self) -> bool:

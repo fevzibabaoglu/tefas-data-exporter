@@ -17,21 +17,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 
-import pandas as pd
+from .dataframe_utils import DataFrameUtils
+from .date_utils import DateUtils
 
 
-class Utils:
-    @staticmethod
-    def postprocess_dataframe(df: pd.DataFrame) -> pd.DataFrame:
-        if df.empty:
-            return df
-
-        # Convert numeric columns to Int64 if they are all integers
-        # This is useful for handling NaN values in integer columns
-        df = df.apply(
-            lambda col: col.astype('Int64')
-            if pd.api.types.is_float_dtype(col) and \
-                col.dropna().apply(float.is_integer).all()
-            else col
-        )
-        return df
+__all__ = ["DataFrameUtils", "DateUtils"]

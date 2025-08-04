@@ -20,13 +20,17 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from datetime import datetime, date
 
 
-class Utils:
+class DateUtils:
     DATE_FORMAT = "%d.%m.%Y"
 
     @staticmethod
     def parse_date(date_str: str) -> date:
-        return datetime.strptime(date_str, Utils.DATE_FORMAT).date()
+        return datetime.strptime(date_str, DateUtils.DATE_FORMAT).date()
 
     @staticmethod
     def format_date(date_obj: date) -> str:
-        return date_obj.strftime(Utils.DATE_FORMAT)
+        return date_obj.strftime(DateUtils.DATE_FORMAT)
+
+    @staticmethod
+    def get_today() -> date:
+        return date.today()

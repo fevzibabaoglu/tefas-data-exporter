@@ -6,7 +6,7 @@ A Python tool to fetch, process, and export fund data from TEFAS (Türkiye Elekt
 ## Usage
 
 ```bash
-python src/main.py [-h] [--input INPUT] [--output OUTPUT] [--no-processed] [--get-only-founders] [--founders FOUNDER_1 FOUNDER_2 ...] [--range RANGE] [--max-workers MAX_WORKERS]
+python src/main.py [-h] [<args>]
 ```
 
 
@@ -17,6 +17,7 @@ python src/main.py [-h] [--input INPUT] [--output OUTPUT] [--no-processed] [--ge
 | `--input`               | Optional path to a raw fund CSV. If provided, skips fetching real-time data. |
 | `--output`              | Output directory to save the files. (default: 'output')                      |
 | `--no-processed`        | Do not include processed data in the output.                                 |
+| `--update`              | Update the price data with the latest prices.                                                       |
 | `--get-only-founders`   | Fetch only founder data and display.                                         |
 | `--founders`            | List of founder codes for additional fetching.                               |
 | `--range`               | The time range for which to fetch data. (default: 'YEAR_1') [options: 'WEEK_1', 'MONTH_1', 'MONTH_3', 'MONTH_6', 'YEAR_START', 'YEAR_1', 'YEAR_3', 'YEAR_5'] |

@@ -22,7 +22,6 @@ from .asset import Asset
 from .date_range import DateRange, TimeFrame
 from .founder import Founder
 from .price import Price
-from .utils import Utils
 
 
 __all__ = [
@@ -32,5 +31,4 @@ __all__ = [
     "TimeFrame",
     "Founder",
     "Price",
-    "Utils",
 ]

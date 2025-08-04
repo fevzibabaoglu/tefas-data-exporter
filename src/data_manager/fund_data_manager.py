@@ -51,6 +51,8 @@ class FundDataManager:
                     if fund_code not in existing_codes:
                         fund_codes_data.update({fund_code: founder})
 
+        return fund_codes_data
+
     def fetch_fund_data(self, fund_codes_data: Dict[str, Founder]) -> List[Asset]:
         with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
             futures = {

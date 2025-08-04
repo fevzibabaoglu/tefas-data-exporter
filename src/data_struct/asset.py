@@ -17,8 +17,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 
-import ast
-import numpy as np
 import pandas as pd
 from typing import List, Optional
 
@@ -27,6 +25,7 @@ from .asset_distribution import AssetDistribution
 from .date_range import DateRange
 from .founder import Founder
 from .price import Price
+from utils import DataFrameUtils
 
 
 class Asset:
@@ -159,19 +158,8 @@ class Asset:
 
     @classmethod
     def from_csv(cls, csv_path: str) -> List['Asset']:
-        def _parse_to_list(x):
-            if isinstance(x, str):
-                try:
-                    return ast.literal_eval(x)
-                except (ValueError, SyntaxError):
-                    return x
-            return x
-
         df = pd.read_csv(csv_path, encoding="utf-8")
-
-        for col in df.columns:
-            df[col] = df[col].apply(_parse_to_list)
-        df = df.replace({np.nan: None})
+        df = DataFrameUtils.postprocess_dataframe(df)
 
         return [
             cls.from_dict(row)

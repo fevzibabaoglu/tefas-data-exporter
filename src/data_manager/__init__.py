@@ -21,4 +21,4 @@ from .data_processor import DataProcessor
 from .fund_data_manager import FundDataManager
 from .price_updater import PriceUpdater
 
-__all__ = ["DataProcessor", "FundDataManager"]
+__all__ = ["DataProcessor", "FundDataManager", "PriceUpdater"]

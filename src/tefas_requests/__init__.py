@@ -20,6 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from .founder_fetcher import FounderFetcher
 from .fund_fetcher import FundFetcher
 from .fund_code_fetcher import FundCodeFetcher
+from .updated_prices_fetcher import UpdatedPricesFetcher
 
 
-__all__ = ["FounderFetcher", "FundFetcher", "FundCodeFetcher"]
+__all__ = ["FounderFetcher", "FundFetcher", "FundCodeFetcher", "UpdatedPricesFetcher"]

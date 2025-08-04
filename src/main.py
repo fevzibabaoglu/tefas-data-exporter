@@ -21,7 +21,7 @@ import argparse
 import pandas as pd
 from pathlib import Path
 
-from data_manager import DataProcessor, FundDataManager
+from data_manager import DataProcessor, FundDataManager, PriceUpdater
 from data_struct import Asset
 from tefas_requests import FounderFetcher, FundCodeFetcher
 from utils import DataFrameUtils
@@ -61,6 +61,10 @@ class Main:
             help="Do not include processed data in the output."
         )
         parser.add_argument(
+            "--update", action="store_true",
+            help="Update the price data."
+        )
+        parser.add_argument(
             "--get-only-founders", action="store_true",
             help="Fetch only founder data and display."
         )
@@ -87,6 +91,20 @@ class Main:
         if self.args.get_only_founders:
             for founder in self.founder_data:
                 print(f"Code: {founder.get_code()}, Name: {founder.get_name()}")
+            return
+
+        if self.args.update:
+            assets = Asset.from_csv(self.input_path)
+            manager = FundDataManager(
+                fund_price_range=self.args.range,
+                max_workers=self.args.max_workers,
+            )
+            price_updater = PriceUpdater(assets, manager)
+            updated_assets = price_updater.update_prices()
+
+            raw_df = pd.DataFrame([obj.to_dict() for obj in updated_assets])
+            raw_df = DataFrameUtils.postprocess_dataframe(raw_df)
+            raw_df.to_csv(self.raw_output_path, index=False, encoding="utf-8")
             return
 
         if not self.args.input:
@@ -140,6 +158,12 @@ class Main:
             raise ValueError("Cannot use --input and --get-only-founders together.")
         if self.args.input and self.args.founders:
             raise ValueError("Cannot use --input and --founders together.")
+        if self.args.update and not self.args.input:
+            raise ValueError("Cannot use --update without an input file.")
+        if self.args.update and self.args.get_only_founders:
+            raise ValueError("Cannot use --update and --get-only-founders together.")
+        if self.args.update and self.args.founders:
+            raise ValueError("Cannot use --update and --founders together.")
         if self.args.get_only_founders and self.args.founders:
             raise ValueError("Cannot use --get-only-founders and --founders together.")
 

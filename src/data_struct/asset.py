@@ -18,7 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 import pandas as pd
-from typing import List, Optional
+from typing import List, Optional, Dict
 
 
 from .asset_distribution import AssetDistribution
@@ -106,6 +106,17 @@ class Asset:
 
     def get_date_range(self) -> DateRange:
         return self.date_range
+
+    def extend_prices(self, new_prices: List[Price]):
+        self.get_prices().extend(new_prices)
+        self.date_range = DateRange(
+            start_date=self.get_prices()[0].get_date(),
+            end_date=self.get_prices()[-1].get_date()
+        )
+
+    @staticmethod
+    def get_code_asset_dict(assets: List["Asset"]) -> Dict[str, "Asset"]:
+        return {asset.get_code(): asset for asset in assets}
 
     def to_dict(self) -> dict:
         founder = self.get_founder()

@@ -20,6 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from datetime import date
 from dateutil.relativedelta import relativedelta
 from enum import Enum, auto
+from typing import List
 
 from utils import DateUtils
 
@@ -35,7 +36,13 @@ class DateRange:
 
     def get_end_date(self) -> date:
         return self.end_date
-    
+
+    def get_all_dates(self) -> List[date]:
+        return [
+            self.get_start_date() + relativedelta(days=i)
+            for i in range((self.get_end_date() - self.get_start_date()).days + 1)
+        ]
+
     def to_dict(self) -> dict:
         return {
             "start_date": DateUtils.format_date(self.get_start_date()),

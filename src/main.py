@@ -21,9 +21,10 @@ import argparse
 import pandas as pd
 from pathlib import Path
 
-from data_manager import DataProcessor, FundDataManager, Utils
+from data_manager import DataProcessor, FundDataManager
 from data_struct import Asset
 from tefas_requests import FounderFetcher, FundCodeFetcher
+from utils import DataFrameUtils
 
 
 def main():
@@ -79,7 +80,7 @@ def main():
 
         assets = manager.fetch_all_fund_data()
         raw_df = pd.DataFrame([obj.to_dict() for obj in assets])
-        raw_df = Utils.postprocess_dataframe(raw_df)
+        raw_df = DataFrameUtils.postprocess_dataframe(raw_df)
 
         raw_csv_path = output_dir / "fund_data_raw.csv"
         raw_df.to_csv(raw_csv_path, index=False, encoding="utf-8")
@@ -90,7 +91,7 @@ def main():
 
         processor = DataProcessor(assets)
         processed_df = processor.process()
-        processed_df = Utils.postprocess_dataframe(processed_df)
+        processed_df = DataFrameUtils.postprocess_dataframe(processed_df)
 
         processed_csv_path = output_dir / "fund_data.csv"
         processed_df.to_csv(processed_csv_path, index=False, encoding="utf-8")

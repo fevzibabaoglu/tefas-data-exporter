@@ -19,7 +19,6 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 from .data_processor import DataProcessor
 from .fund_data_manager import FundDataManager
-from .utils import Utils
+from .price_updater import PriceUpdater
 
-
-__all__ = ["DataProcessor", "FundDataManager", "Utils"]
+__all__ = ["DataProcessor", "FundDataManager"]

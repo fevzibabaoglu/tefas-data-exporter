@@ -24,7 +24,8 @@ from enum import Enum, auto
 from typing import Optional, Union, List
 
 from .tefas_requester import TEFASRequester
-from data_struct import AssetDistribution, Asset, Founder, Price, Utils
+from data_struct import AssetDistribution, Asset, Founder, Price
+from utils import DateUtils
 
 
 class FundFetcher:
@@ -116,7 +117,7 @@ class FundFetcher:
 
         price_list = [
             Price(
-                date=Utils.parse_date(d),
+                date=DateUtils.parse_date(d),
                 value=p,
             )
             for d, p in zip(dates, prices)

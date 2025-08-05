@@ -110,11 +110,7 @@ class Main:
 
         if self.args.update:
             assets = Asset.from_csv(self.input_path)
-            manager = FundDataManager(
-                fund_price_range=self.args.range,
-                max_workers=self.args.max_workers,
-            )
-            price_updater = PriceUpdater(assets, manager)
+            price_updater = PriceUpdater(assets)
             updated_assets = price_updater.update_prices()
 
             raw_df = pd.DataFrame([obj.to_dict() for obj in updated_assets])

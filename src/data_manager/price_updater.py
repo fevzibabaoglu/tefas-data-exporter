@@ -17,12 +17,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 
 
+import logging
 from dateutil.relativedelta import relativedelta
 from typing import List
 
 from .fund_data_manager import FundDataManager
 from data_struct import Asset, DateRange
 from tefas_requests import FundCodeFetcher, UpdatedPricesFetcher
+from tefas_requests import UpdatedPricesFetcher
 from utils import DateUtils
 
 
@@ -38,14 +40,22 @@ class PriceUpdater:
         )
 
     def update_prices(self) -> List[Asset]:
-        start_date = self.get_last_date() + relativedelta(days=1)
+        # Get the data with a 7-day margin before the last update to this date
+        # This is to ensure that we have accurate data, as TEFAS might update
+        # its data during the remainder of the previous data collection day.
+        day_margin = 7
+        start_date = self.get_last_date() - relativedelta(days=(day_margin + 1))
         end_date = DateUtils.get_today()
-        if start_date > end_date:
-            raise ValueError("Data is already up to date.")
 
         date_range = DateRange(
             start_date=start_date,
             end_date=end_date
+        )
+
+        logging.info(
+            f"Updating prices for assets "
+            f"from {DateUtils.format_date(date_range.get_start_date())} "
+            f"to {DateUtils.format_date(date_range.get_end_date())}"
         )
 
         new_asset_codes = []

@@ -18,6 +18,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
 import argparse
+import logging
 import pandas as pd
 from pathlib import Path
 
@@ -27,21 +28,34 @@ from tefas_requests import FounderFetcher, FundCodeFetcher
 from utils import DataFrameUtils
 
 
+# Configurations
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(message)s",
+    handlers=[
+        logging.StreamHandler()
+    ]
+)
+
+
 class Main:
     def __init__(
         self,
+        founders_csv_filename: str = "founders.csv",
         raw_csv_filename: str = "fund_data_raw.csv",
         processed_csv_filename: str = "fund_data.csv",
     ):
         self.args = self.parse_args()
+        self.founders_csv_filename = founders_csv_filename
         self.raw_csv_filename = raw_csv_filename
         self.processed_csv_filename = processed_csv_filename
         self._parse_args()
 
         self.input_path = self._parse_input_path()
         self.output_directory_path = self._parse_output_directory_path()
-        self.raw_output_path = self._parse_raw_output_path(self.raw_csv_filename)
-        self.processed_output_path = self._parse_processed_output_path(self.processed_csv_filename)
+        self.founders_output_path = self._parse_file_output_path(self.founders_csv_filename)
+        self.raw_output_path = self._parse_file_output_path(self.raw_csv_filename)
+        self.processed_output_path = self._parse_file_output_path(self.processed_csv_filename)
         self._check_validity()
 
         self.founder_data = self.get_founder_data()
@@ -89,8 +103,9 @@ class Main:
 
     def run(self):
         if self.args.get_only_founders:
-            for founder in self.founder_data:
-                print(f"Code: {founder.get_code()}, Name: {founder.get_name()}")
+            raw_df = pd.DataFrame([obj.to_dict() for obj in self.founder_data])
+            raw_df.to_csv(self.founders_output_path, index=False, encoding="utf-8")
+            logging.info(f"Founders data saved to {self.founders_output_path}")
             return
 
         if self.args.update:
@@ -143,13 +158,9 @@ class Main:
             if output_path.exists() and output_path.is_dir():
                 return output_path
 
-    def _parse_raw_output_path(self, raw_csv_filename: str):
-        if self.args.output and self.output_directory_path and self.raw_csv_filename:
-            return self.output_directory_path / raw_csv_filename
-
-    def _parse_processed_output_path(self, processed_csv_filename: str):
-        if self.args.output and self.output_directory_path and self.processed_csv_filename:
-            return self.output_directory_path / processed_csv_filename
+    def _parse_file_output_path(self, filename: str):
+        if self.args.output and self.output_directory_path and filename:
+            return self.output_directory_path / filename
 
     def _parse_args(self):
         if self.args.input and self.args.no_processed:
@@ -167,6 +178,10 @@ class Main:
         if self.args.get_only_founders and self.args.founders:
             raise ValueError("Cannot use --get-only-founders and --founders together.")
 
+        if not self.founders_csv_filename:
+            raise ValueError("Founders CSV filename must be specified.")
+        if not isinstance(self.founders_csv_filename, str):
+            raise ValueError("Founders CSV filename must be a string.")
         if not self.raw_csv_filename:
             raise ValueError("Raw CSV filename must be specified.")
         if not isinstance(self.raw_csv_filename, str):
@@ -185,6 +200,7 @@ class Main:
 
 if __name__ == '__main__':
     Main(
+        founders_csv_filename="founders.csv",
         raw_csv_filename="fund_data_raw.csv",
         processed_csv_filename="fund_data.csv",
     ).run()

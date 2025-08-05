@@ -29,6 +29,12 @@ class Founder:
     def get_name(self) -> str:
         return self.name
 
+    def to_dict(self) -> dict:
+        return {
+            "founder_code": self.get_code(),
+            "founder_name": self.get_name()
+        }
+
     def _check_validity(self) -> bool:
         if not self.get_code():
             raise ValueError("Code cannot be empty.")

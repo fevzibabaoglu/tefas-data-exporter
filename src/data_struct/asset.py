@@ -108,6 +108,29 @@ class Asset:
         return self.date_range
 
     def extend_prices(self, new_prices: List[Price]):
+        if not new_prices:
+            return
+
+        new_prices_date_range = DateRange(
+            start_date=new_prices[0].get_date(),
+            end_date=new_prices[-1].get_date()
+        )
+        existing_prices = self.get_prices(new_prices_date_range)
+
+        if existing_prices:
+            for price in existing_prices:
+                new_price = new_prices.pop(0)
+
+                if price.get_date() != new_price.get_date():
+                    raise ValueError(
+                        f"Price date mismatch: existing {price.get_date()} vs new {new_price.get_date()}"
+                    )
+
+                price.set_value(new_price.get_value())
+
+        if not new_prices:
+            return
+
         self.get_prices().extend(new_prices)
         self.date_range = DateRange(
             start_date=self.get_prices()[0].get_date(),

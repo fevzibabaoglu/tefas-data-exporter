@@ -18,7 +18,7 @@ python src/main.py [-h] [<args>]
 | `--output`              | Output directory to save the files. (default: 'output')                      |
 | `--no-processed`        | Do not include processed data in the output.                                 |
 | `--update`              | Update the price data with the latest prices.                                                       |
-| `--get-only-founders`   | Fetch only founder data and display.                                         |
+| `--get-only-founders`   | Fetch only founder data and store.                                           |
 | `--founders`            | List of founder codes for additional fetching.                               |
 | `--range`               | The time range for which to fetch data. (default: 'YEAR_1') [options: 'WEEK_1', 'MONTH_1', 'MONTH_3', 'MONTH_6', 'YEAR_START', 'YEAR_1', 'YEAR_3', 'YEAR_5'] |
 | `--max-workers`         | Maximum number of workers for fetching data. (default: 16)                   |

@@ -34,6 +34,10 @@ class Price:
     def get_value(self) -> float:
         return self.value
 
+    def set_value(self, value: float):
+        self.value = value
+        self._check_validity()
+
     def to_dict(self) -> dict:
         return {
             "date": DateUtils.format_date(self.get_date()),
